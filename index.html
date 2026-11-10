@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grumpy Darts Premier League Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        grumpyDark: '#0a0505',
+                        grumpyPanel: '#150a0a',
+                        grumpyCard: '#1f0d0d',
+                        grumpyRed: '#dc2626',
+                        grumpyOrange: '#f97316',
+                        grumpyYellow: '#facc15',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap');
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #1a0808 0%, #080303 100%);
+            color: #f3f4f6;
+            min-height: 100vh;
+        }
+        .fiery-glow {
+            text-shadow: 0 0 15px rgba(249, 115, 22, 0.6), 0 0 30px rgba(220, 38, 38, 0.4);
+        }
+        .fire-border {
+            border: 2px solid transparent;
+            border-image: linear-gradient(to bottom right, #f97316, #dc2626) 1;
+        }
+        .table-glow {
+            box-shadow: 0 0 25px rgba(220, 38, 38, 0.25);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <!-- Header & Branding -->
+        <header class="text-center space-y-4 relative py-6 bg-grumpyPanel rounded-2xl fire-border shadow-2xl overflow-hidden px-4">
+            <div class="absolute inset-0 bg-gradient-to-r from-red-950/30 via-orange-950/40 to-red-950/30 pointer-events-none"></div>
+            <div class="relative z-10 flex flex-col items-center">
+                <div class="inline-flex items-center gap-3 bg-red-950/60 px-6 py-2 rounded-full border border-orange-500/40 mb-3 shadow-inner">
+                    <i class="fa-solid fa-fire text-orange-500 animate-pulse text-lg"></i>
+                    <span class="text-xs sm:text-sm font-bold tracking-widest text-orange-400 uppercase">Season 4 • Official League Manager & Stats</span>
+                    <i class="fa-solid fa-fire text-orange-500 animate-pulse text-lg"></i>
+                </div>
+                <h1 class="text-4xl sm:text-6xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-orange-500 to-red-600 fiery-glow">
+                    Grumpy Darts
+                </h1>
+                <p class="text-lg sm:text-2xl font-extrabold text-orange-200 tracking-wide uppercase mt-1">
+                    Premier League Standings & Stats Tracker
+                </p>
+            </div>
+            
+            <!-- League Toggles & Action Toolbar -->
+            <div class="relative z-10 flex flex-wrap items-center justify-center gap-4 pt-4 border-t border-red-950">
+                <div class="bg-black/60 p-1.5 rounded-xl border border-red-900/50 flex gap-2">
+                    <button id="btnLeague1" onclick="switchLeague('league1')" class="px-5 py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg">
+                        <i class="fa-solid fa-trophy mr-2"></i>League 1
+                    </button>
+                    <button id="btnLeague2" onclick="switchLeague('league2')" class="px-5 py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 text-neutral-400 hover:text-white hover:bg-neutral-900">
+                        <i class="fa-solid fa-medal mr-2"></i>League 2
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="toggleEditMode()" id="btnEditToggle" class="px-4 py-2.5 rounded-xl font-bold text-sm bg-neutral-900 hover:bg-neutral-800 text-orange-400 border border-orange-500/40 transition-all shadow-md flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square"></i><span id="editText">Unlock Editing</span>
+                    </button>
+                    <button onclick="openAddPlayerModal()" class="px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-500 text-white transition-all shadow-md flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i>Add Player
+                    </button>
+                    <button onclick="resetData()" class="px-4 py-2.5 rounded-xl font-bold text-sm bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 transition-all shadow-md flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i>Reset Table
+                    </button>
+                    <button onclick="exportTable()" class="px-4 py-2.5 rounded-xl font-bold text-sm bg-neutral-900 hover:bg-neutral-800 text-yellow-400 border border-yellow-500/30 transition-all shadow-md flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i>Export JSON
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Highlights Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Most 180s -->
+            <div class="bg-grumpyPanel p-5 rounded-2xl fire-border shadow-xl flex items-center gap-4 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-orange-600/10 text-8xl font-black pointer-events-none">180</div>
+                <div class="w-14 h-14 rounded-2xl bg-orange-600/20 border border-orange-500/40 flex items-center justify-center text-orange-400 text-2xl shadow-inner shrink-0">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs uppercase tracking-widest text-neutral-400 font-bold">Most 180s Hit</h3>
+                    <p id="statMost180" class="text-xl font-black text-white mt-0.5">-</p>
+                    <p id="statMost180Count" class="text-xs text-orange-400 font-bold mt-1">0 maximums</p>
+                </div>
+            </div>
+
+            <!-- Highest Checkout -->
+            <div class="bg-grumpyPanel p-5 rounded-2xl fire-border shadow-xl flex items-center gap-4 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-red-600/10 text-8xl font-black pointer-events-none">OUT</div>
+                <div class="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 text-2xl shadow-inner shrink-0">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs uppercase tracking-widest text-neutral-400 font-bold">Highest Checkout</h3>
+                    <p id="statHighestCheckout" class="text-xl font-black text-white mt-0.5">-</p>
+                    <p id="statHighestCheckoutVal" class="text-xs text-red-400 font-bold mt-1">0 checkout</p>
+                </div>
+            </div>
+
+            <!-- Best Average -->
+            <div class="bg-grumpyPanel p-5 rounded-2xl fire-border shadow-xl flex items-center gap-4 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-yellow-600/10 text-8xl font-black pointer-events-none">AVG</div>
+                <div class="w-14 h-14 rounded-2xl bg-yellow-600/20 border border-yellow-500/40 flex items-center justify-center text-yellow-400 text-2xl shadow-inner shrink-0">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs uppercase tracking-widest text-neutral-400 font-bold">Best 3-Dart Average</h3>
+                    <p id="statBestAverage" class="text-xl font-black text-white mt-0.5">-</p>
+                    <p id="statBestAverageVal" class="text-xs text-yellow-400 font-bold mt-1">0.00 avg</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main League Table Container -->
+        <main class="bg-grumpyPanel rounded-2xl fire-border table-glow overflow-hidden shadow-2xl p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 mb-6 border-b border-red-950 gap-4">
+                <div>
+                    <h2 id="currentLeagueTitle" class="text-2xl sm:text-3xl font-black uppercase text-orange-400 tracking-wider">League Table - League 1</h2>
+                    <p class="text-xs sm:text-sm text-neutral-400 mt-1">Click <span class="text-orange-400 font-bold">Unlock Editing</span> to modify player names, scores, legs won, 180s, checkouts, and averages.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-red-950/40 px-4 py-2 rounded-xl border border-red-900/60">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span class="text-xs font-semibold text-neutral-300 uppercase tracking-wider">Live Standings Sync</span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[950px]">
+                    <thead>
+                        <tr class="bg-red-950/80 text-orange-300 text-xs sm:text-sm uppercase tracking-wider border-b border-red-900">
+                            <th class="p-3 sm:p-4 text-center w-16">Rank</th>
+                            <th class="p-3 sm:p-4 min-w-[160px]">Player</th>
+                            <th class="p-3 sm:p-4 text-center w-20">Night 1</th>
+                            <th class="p-3 sm:p-4 text-center w-20">Night 2</th>
+                            <th class="p-3 sm:p-4 text-center w-20">Night 3</th>
+                            <th class="p-3 sm:p-4 text-center w-20">Night 4</th>
+                            <th class="p-3 sm:p-4 text-center w-20">Night 5</th>
+                            <th class="p-3 sm:p-4 text-center w-24 bg-red-900/30">Legs Won</th>
+                            <th class="p-3 sm:p-4 text-center w-20 bg-orange-950/40 text-orange-300" title="180s Hit">180s</th>
+                            <th class="p-3 sm:p-4 text-center w-24 bg-red-950/40 text-red-300" title="Highest Checkout">High Out</th>
+                            <th class="p-3 sm:p-4 text-center w-24 bg-yellow-950/30 text-yellow-300" title="3-Dart Average">Average</th>
+                            <th class="p-3 sm:p-4 text-center w-24 bg-orange-950/50 text-yellow-300 font-extrabold">Total</th>
+                            <th id="actionHeader" class="p-3 sm:p-4 text-center w-20 hidden">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playerTableBody" class="divide-y divide-red-950/60 text-sm sm:text-base">
+                        <!-- Rows rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer Branding & Credits -->
+            <div class="mt-8 pt-6 border-t border-red-950 flex flex-col sm:flex-row items-center justify-between gap-4 text-neutral-400 text-sm">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye text-orange-500"></i>
+                    <span>Grumpy Darts Community League • Powered by Legcast.nl</span>
+                </div>
+                <div class="flex gap-4">
+                    <span class="bg-neutral-900 px-3 py-1 rounded-lg border border-red-900/40 text-xs">Total Players: <span id="playerCount" class="text-orange-400 font-bold">8</span></span>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Add Player Modal -->
+    <div id="addPlayerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-grumpyPanel border border-orange-500/40 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
+            <div class="flex justify-between items-center pb-4 border-b border-red-950">
+                <h3 class="text-xl font-black text-orange-400 uppercase">Add New Player</h3>
+                <button onclick="closeAddPlayerModal()" class="text-neutral-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Player Name / Nickname</label>
+                    <input type="text" id="newPlayerName" placeholder="e.g. Bullseye Bob" class="w-full bg-black/60 border border-red-900 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 font-medium">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Legs Won</label>
+                        <input type="number" id="newPlayerLegs" value="0" class="w-full bg-black/60 border border-red-900 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 font-medium text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">180s Hit</label>
+                        <input type="number" id="newPlayer180s" value="0" class="w-full bg-black/60 border border-red-900 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 font-medium text-center">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Highest Checkout</label>
+                        <input type="number" id="newPlayerCheckout" value="0" class="w-full bg-black/60 border border-red-900 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 font-medium text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">3-Dart Average</label>
+                        <input type="number" step="0.01" id="newPlayerAverage" value="0.00" class="w-full bg-black/60 border border-red-900 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 font-medium text-center">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeAddPlayerModal()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-300">Cancel</button>
+                <button onclick="confirmAddPlayer()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white shadow-lg">Add Player</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-neutral-900 border border-orange-500/50 text-white px-6 py-3 rounded-xl shadow-2xl z-50 transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-orange-500"></i>
+        <span id="toastMessage" class="font-semibold text-sm">Action completed successfully!</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Initial Default Data with stats (180s, highOut, average)
+        const defaultData = {
+            league1: [
+                { id: 'l1-1', name: 'Grumpy darts', n1: 5, n2: 4, n3: 2, n4: 0, n5: 0, legs: 34, s180: 8, highOut: 161, avg: 88.54 },
+                { id: 'l1-2', name: 'Monty', n1: 4, n2: 2, n3: 4, n4: 0, n5: 0, legs: 29, s180: 6, highOut: 142, avg: 85.20 },
+                { id: 'l1-3', name: 'Callum', n1: 2, n2: 2, n3: 5, n4: 0, n5: 0, legs: 27, s180: 5, highOut: 130, avg: 83.95 },
+                { id: 'l1-4', name: 'AP Darts', n1: 2, n2: 5, n3: 0, n4: 0, n5: 0, legs: 22, s180: 4, highOut: 120, avg: 81.10 },
+                { id: 'l1-5', name: 'Dan', n1: 0, n2: 0, n3: 2, n4: 0, n5: 0, legs: 8, s180: 1, highOut: 95, avg: 74.40 },
+                { id: 'l1-6', name: 'Analyzer 170', n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, legs: 3, s180: 2, highOut: 170, avg: 78.60 },
+                { id: 'l1-7', name: 'Charlie', n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, legs: 2, s180: 0, highOut: 64, avg: 71.20 },
+                { id: 'l1-8', name: 'Average joe', n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, legs: 0, s180: 0, highOut: 40, avg: 65.50 }
+            ],
+            league2: [
+                { id: 'l2-1', name: 'Paul the powerhouse', n1: 5, n2: 0, n3: 5, n4: 0, n5: 0, legs: 30, s180: 7, highOut: 156, avg: 86.40 },
+                { id: 'l2-2', name: 'Justice', n1: 2, n2: 5, n3: 0, n4: 0, n5: 0, legs: 24, s180: 5, highOut: 135, avg: 82.80 },
+                { id: 'l2-3', name: 'Hammer', n1: 0, n2: 2, n3: 4, n4: 0, n5: 0, legs: 18, s180: 3, highOut: 110, avg: 79.15 },
+                { id: 'l2-4', name: 'Rocketman', n1: 4, n2: 0, n3: 0, n4: 0, n5: 0, legs: 13, s180: 2, highOut: 104, avg: 77.50 },
+                { id: 'l2-5', name: 'Flukey Lukey', n1: 0, n2: 4, n3: 0, n4: 0, n5: 0, legs: 9, s180: 1, highOut: 88, avg: 74.20 },
+                { id: 'l2-6', name: 'Ash', n1: 2, n2: 0, n3: 2, n4: 0, n5: 0, legs: 5, s180: 1, highOut: 76, avg: 72.10 },
+                { id: 'l2-7', name: 'clarke', n1: 0, n2: 2, n3: 2, n4: 0, n5: 0, legs: 4, s180: 0, highOut: 68, avg: 70.40 },
+                { id: 'l2-8', name: 'young grumpy', n1: 0, n2: 0, n3: 0, n4: 0, n5: 0, legs: 4, s180: 0, highOut: 52, avg: 68.30 }
+            ]
+        };
+
+        let currentLeague = 'league1';
+        let isEditMode = false;
+
+        // Load data from localStorage or fallback to default
+        let leagueData = JSON.parse(localStorage.getItem('grumpy_darts_stats_data')) || defaultData;
+
+        function saveToStorage() {
+            localStorage.setItem('grumpy_darts_stats_data', JSON.stringify(leagueData));
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toastMessage');
+            msg.textContent = message;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchLeague(leagueKey) {
+            currentLeague = leagueKey;
+            const btn1 = document.getElementById('btnLeague1');
+            const btn2 = document.getElementById('btnLeague2');
+            const title = document.getElementById('currentLeagueTitle');
+
+            if (leagueKey === 'league1') {
+                btn1.className = "px-5 py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg";
+                btn2.className = "px-5 py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 text-neutral-400 hover:text-white hover:bg-neutral-900";
+                title.textContent = "League Table - League 1";
+            } else {
+                btn2.className = "px-5 py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg";
+                btn1.className = "px-5 py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 text-neutral-400 hover:text-white hover:bg-neutral-900";
+                title.textContent = "League Table - League 2";
+            }
+            renderTable();
+            updateTopStats();
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById('btnEditToggle');
+            const text = document.getElementById('editText');
+            
+            if (isEditMode) {
+                btn.className = "px-4 py-2.5 rounded-xl font-bold text-sm bg-orange-600 text-white transition-all shadow-md flex items-center gap-2";
+                text.textContent = "Lock Editing";
+                showToast("Editing unlocked! You can now edit player stats and scores.");
+            } else {
+                btn.className = "px-4 py-2.5 rounded-xl font-bold text-sm bg-neutral-900 hover:bg-neutral-800 text-orange-400 border border-orange-500/40 transition-all shadow-md flex items-center gap-2";
+                text.textContent = "Unlock Editing";
+                showToast("Changes saved successfully!");
+            }
+            renderTable();
+        }
+
+        function calculateTotal(p) {
+            return Number(p.n1) + Number(p.n2) + Number(p.n3) + Number(p.n4) + Number(p.n5);
+        }
+
+        function updateTopStats() {
+            let players = leagueData[currentLeague];
+            if (!players || players.length === 0) return;
+
+            // Most 180s
+            let top180 = [...players].sort((a, b) => Number(b.s180) - Number(a.s180))[0];
+            document.getElementById('statMost180').textContent = top180 ? top180.name : '-';
+            document.getElementById('statMost180Count').textContent = `${top180 ? top180.s180 : 0} maximums`;
+
+            // Highest Checkout
+            let topCheckout = [...players].sort((a, b) => Number(b.highOut) - Number(a.highOut))[0];
+            document.getElementById('statHighestCheckout').textContent = topCheckout ? topCheckout.name : '-';
+            document.getElementById('statHighestCheckoutVal').textContent = `${topCheckout ? topCheckout.highOut : 0} checkout`;
+
+            // Best Average
+            let topAvg = [...players].sort((a, b) => Number(b.avg) - Number(a.avg))[0];
+            document.getElementById('statBestAverage').textContent = topAvg ? topAvg.name : '-';
+            document.getElementById('statBestAverageVal').textContent = `${topAvg ? Number(topAvg.avg).toFixed(2) : '0.00'} avg`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('playerTableBody');
+            const actionHeader = document.getElementById('actionHeader');
+            const playerCount = document.getElementById('playerCount');
+
+            if (isEditMode) {
+                actionHeader.classList.remove('hidden');
+            } else {
+                actionHeader.classList.add('hidden');
+            }
+
+            let players = leagueData[currentLeague];
+
+            // Sort players by Total descending, then Legs won descending
+            players.sort((a, b) => {
+                let totalA = calculateTotal(a);
+                let totalB = calculateTotal(b);
+                if (totalB !== totalA) {
+                    return totalB - totalA;
+                }
+                return Number(b.legs) - Number(a.legs);
+            });
+
+            playerCount.textContent = players.length;
+            tbody.innerHTML = '';
+
+            players.forEach((p, index) => {
+                let total = calculateTotal(p);
+                let rank = index + 1;
+                let rankBadge = '';
+
+                if (rank === 1) rankBadge = 'bg-yellow-500 text-black font-black';
+                else if (rank === 2) rankBadge = 'bg-neutral-300 text-black font-black';
+                else if (rank === 3) rankBadge = 'bg-amber-700 text-white font-bold';
+                else rankBadge = 'bg-red-950/60 text-neutral-300 font-semibold';
+
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-red-950/20 transition-colors border-b border-red-950/40";
+
+                let nameHtml = isEditMode 
+                    ? `<input type="text" value="${p.name}" onchange="updatePlayerField('${p.id}', 'name', this.value)" class="w-full bg-black/60 border border-red-900 rounded-lg px-3 py-1.5 text-white font-bold focus:outline-none focus:border-orange-500">`
+                    : `<span class="font-bold text-white tracking-wide">${p.name}</span>`;
+
+                let scoreCell = (nightKey, val) => {
+                    if (isEditMode) {
+                        return `<input type="number" value="${val}" onchange="updatePlayerField('${p.id}', '${nightKey}', this.value)" class="w-14 bg-black/60 border border-red-900 rounded-lg py-1.5 text-center text-orange-400 font-bold focus:outline-none focus:border-orange-500 mx-auto block">`;
+                    } else {
+                        return `<span class="font-semibold ${val > 0 ? 'text-orange-400' : 'text-neutral-500'}">${val}</span>`;
+                    }
+                };
+
+                let inputCell = (fieldKey, val, width = 'w-16', colorClass = 'text-neutral-200', step = '1') => {
+                    if (isEditMode) {
+                        return `<input type="number" step="${step}" value="${val}" onchange="updatePlayerField('${p.id}', '${fieldKey}', this.value)" class="${width} bg-black/60 border border-red-900 rounded-lg py-1.5 text-center ${colorClass} font-bold focus:outline-none focus:border-orange-500 mx-auto block">`;
+                    } else {
+                        return `<span class="font-bold ${colorClass}">${fieldKey === 'avg' ? Number(val).toFixed(2) : val}</span>`;
+                    }
+                };
+
+                let actionHtml = isEditMode
+                    ? `<button onclick="deletePlayer('${p.id}')" class="p-2 text-red-500 hover:text-red-400 bg-red-950/50 hover:bg-red-900 rounded-lg transition-all" title="Remove Player"><i class="fa-solid fa-trash"></i></button>`
+                    : ``;
+
+                tr.innerHTML = `
+                    <td class="p-3 sm:p-4 text-center">
+                        <span class="w-8 h-8 rounded-lg flex items-center justify-center mx-auto text-sm ${rankBadge}">${rank}</span>
+                    </td>
+                    <td class="p-3 sm:p-4">${nameHtml}</td>
+                    <td class="p-3 sm:p-4 text-center">${scoreCell('n1', p.n1)}</td>
+                    <td class="p-3 sm:p-4 text-center">${scoreCell('n2', p.n2)}</td>
+                    <td class="p-3 sm:p-4 text-center">${scoreCell('n3', p.n3)}</td>
+                    <td class="p-3 sm:p-4 text-center">${scoreCell('n4', p.n4)}</td>
+                    <td class="p-3 sm:p-4 text-center">${scoreCell('n5', p.n5)}</td>
+                    <td class="p-3 sm:p-4 text-center bg-red-950/20">${inputCell('legs', p.legs, 'w-16', 'text-neutral-200')}</td>
+                    <td class="p-3 sm:p-4 text-center bg-orange-950/20">${inputCell('s180', p.s180, 'w-16', 'text-orange-400')}</td>
+                    <td class="p-3 sm:p-4 text-center bg-red-950/20">${inputCell('highOut', p.highOut, 'w-16', 'text-red-400')}</td>
+                    <td class="p-3 sm:p-4 text-center bg-yellow-950/20">${inputCell('avg', p.avg, 'w-20', 'text-yellow-400', '0.01')}</td>
+                    <td class="p-3 sm:p-4 text-center bg-orange-950/30 text-yellow-400 font-black text-lg">${total}</td>
+                    ${isEditMode ? `<td class="p-3 sm:p-4 text-center">${actionHtml}</td>` : ''}
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateTopStats();
+        }
+
+        function updatePlayerField(id, field, value) {
+            let players = leagueData[currentLeague];
+            let player = players.find(p => p.id === id);
+            if (player) {
+                if (field === 'name') {
+                    player.name = value;
+                } else if (field === 'avg') {
+                    player.avg = parseFloat(value) || 0.00;
+                } else {
+                    player[field] = Number(value) || 0;
+                }
+                saveToStorage();
+                renderTable();
+            }
+        }
+
+        function openAddPlayerModal() {
+            document.getElementById('addPlayerModal').classList.remove('hidden');
+            document.getElementById('newPlayerName').value = '';
+            document.getElementById('newPlayerLegs').value = '0';
+            document.getElementById('newPlayer180s').value = '0';
+            document.getElementById('newPlayerCheckout').value = '0';
+            document.getElementById('newPlayerAverage').value = '70.00';
+        }
+
+        function closeAddPlayerModal() {
+            document.getElementById('addPlayerModal').classList.add('hidden');
+        }
+
+        function confirmAddPlayer() {
+            const name = document.getElementById('newPlayerName').value.trim();
+            const legs = Number(document.getElementById('newPlayerLegs').value) || 0;
+            const s180 = Number(document.getElementById('newPlayer180s').value) || 0;
+            const highOut = Number(document.getElementById('newPlayerCheckout').value) || 0;
+            const avg = parseFloat(document.getElementById('newPlayerAverage').value) || 0.00;
+
+            if (!name) {
+                showToast("Please enter a valid player name", "error");
+                return;
+            }
+
+            const newId = 'p-' + Date.now();
+            leagueData[currentLeague].push({
+                id: newId,
+                name: name,
+                n1: 0,
+                n2: 0,
+                n3: 0,
+                n4: 0,
+                n5: 0,
+                legs: legs,
+                s180: s180,
+                highOut: highOut,
+                avg: avg
+            });
+
+            saveToStorage();
+            closeAddPlayerModal();
+            renderTable();
+            showToast(`Added ${name} to ${currentLeague === 'league1' ? 'League 1' : 'League 2'}`);
+        }
+
+        function deletePlayer(id) {
+            if (confirm("Are you sure you want to remove this player?")) {
+                leagueData[currentLeague] = leagueData[currentLeague].filter(p => p.id !== id);
+                saveToStorage();
+                renderTable();
+                showToast("Player removed successfully");
+            }
+        }
+
+        function resetData() {
+            if (confirm("Reset current league standings back to default preset data?")) {
+                leagueData[currentLeague] = JSON.parse(JSON.stringify(defaultData[currentLeague]));
+                saveToStorage();
+                renderTable();
+                showToast("Standings reset to default");
+            }
+        }
+
+        function exportTable() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(leagueData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `grumpy_darts_season4_stats_${currentLeague}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("League data exported successfully!");
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            renderTable();
+        };
+    </script>
+</body>
+</html>
