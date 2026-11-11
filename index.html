@@ -180,7 +180,7 @@ body{
         class="flex flex-wrap gap-3 justify-center">
 
         <button
-            onclick="switchView('league1')"
+            onclick="switchView('league1', event)"
             class="nav-btn nav-active px-5 py-2 rounded-xl">
 
             League 1
@@ -188,7 +188,7 @@ body{
         </button>
 
         <button
-            onclick="switchView('league2')"
+            onclick="switchView('league2', event)"
             class="nav-btn px-5 py-2 rounded-xl bg-grumpyCard">
 
             League 2
@@ -196,7 +196,7 @@ body{
         </button>
 
         <button
-            onclick="switchView('fixtures')"
+            onclick="switchView('fixtures', event)"
             class="nav-btn px-5 py-2 rounded-xl bg-grumpyCard">
 
             Fixtures
@@ -204,7 +204,7 @@ body{
         </button>
 
         <button
-            onclick="switchView('profiles')"
+            onclick="switchView('profiles', event)"
             class="nav-btn px-5 py-2 rounded-xl bg-grumpyCard">
 
             Profiles
@@ -212,7 +212,7 @@ body{
         </button>
 
         <button
-            onclick="switchView('halloffame')"
+            onclick="switchView('halloffame', event)"
             class="nav-btn px-5 py-2 rounded-xl bg-grumpyCard">
 
             Hall Of Fame
@@ -220,7 +220,7 @@ body{
         </button>
 
         <button
-            onclick="switchView('stats')"
+            onclick="switchView('stats', event)"
             class="nav-btn px-5 py-2 rounded-xl bg-grumpyCard">
 
             Statistics
@@ -453,7 +453,6 @@ onAuthStateChanged(auth,user=>{
 
     }
 
-    // Re-render views when admin state settles
     if(typeof renderLeague === 'function') {
         renderLeague('league1');
         renderLeague('league2');
@@ -497,7 +496,7 @@ function notify(message){
 
 }
 
-function switchView(view){
+function switchView(view, evt){
 
     document
     .querySelectorAll(
@@ -515,8 +514,9 @@ function switchView(view){
     .querySelectorAll('.nav-btn')
     .forEach(b => b.classList.remove('nav-active', 'bg-grumpyRed'));
     
-    // Highlight current
-    event.currentTarget.classList.add('nav-active', 'bg-grumpyRed');
+    if(evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('nav-active', 'bg-grumpyRed');
+    }
 
 }
 
@@ -547,10 +547,6 @@ window.appData = {
 const LEAGUE1_DOC = "league1";
 const LEAGUE2_DOC = "league2";
 const HOF_DOC = "hallOfFame";
-
-// =====================================
-// PLAYER MODEL
-// =====================================
 
 function createPlayer(name){
 
@@ -584,32 +580,22 @@ function createPlayer(name){
 
 }
 
-// =====================================
-// TOTALS
-// =====================================
-
 function totalPoints(player){
 
-    return player.nights.reduce(
+    return (player.nights || []).reduce(
         (a,b)=>a+b,
         0
     );
 
 }
 
-// =====================================
-// SORTING ENGINE
-// =====================================
-
 function getSortedPlayers(league){
 
-    return [...league.players].sort((a,b)=>{
+    return [...(league.players || [])].sort((a,b)=>{
 
-        const totalA =
-            totalPoints(a);
+        const totalA = totalPoints(a);
 
-        const totalB =
-            totalPoints(b);
+        const totalB = totalPoints(b);
 
         if(totalB !== totalA){
 
@@ -618,17 +604,13 @@ function getSortedPlayers(league){
         }
 
         return (
-            b.legsWon -
-            a.legsWon
+            (b.legsWon || 0) -
+            (a.legsWon || 0)
         );
 
     });
 
 }
-
-// =====================================
-// FIRESTORE SAVE
-// =====================================
 
 async function saveLeague(leagueKey){
 
@@ -657,10 +639,6 @@ async function saveLeague(leagueKey){
     }
 
 }
-
-// =====================================
-// FIRESTORE LOAD
-// =====================================
 
 function subscribeLeague(leagueKey){
 
@@ -704,10 +682,6 @@ function subscribeLeague(leagueKey){
 
 }
 
-// =====================================
-// PLAYER ADD
-// =====================================
-
 window.addPlayer = async function(
     leagueKey
 ){
@@ -729,6 +703,10 @@ window.addPlayer = async function(
     if(!playerName)
         return;
 
+    if(!window.appData[leagueKey].players) {
+        window.appData[leagueKey].players = [];
+    }
+
     window.appData[
         leagueKey
     ].players.push(
@@ -745,10 +723,6 @@ window.addPlayer = async function(
     renderProfiles();
 
 }
-
-// =====================================
-// PLAYER DELETE
-// =====================================
 
 window.deletePlayer =
 async function(
@@ -771,7 +745,7 @@ async function(
      ];
 
     league.players =
-      league.players.filter(
+      (league.players || []).filter(
        p=>p.id!==playerId
       );
 
@@ -781,10 +755,6 @@ async function(
     renderProfiles();
 
 }
-
-// =====================================
-// SCORE UPDATE
-// =====================================
 
 window.updateNightScore =
 async function(
@@ -800,11 +770,13 @@ async function(
       window.appData[leagueKey];
 
     const player =
-      league.players.find(
+      (league.players || []).find(
        p=>p.id===playerId
       );
 
     if(!player) return;
+
+    if(!player.nights) player.nights = [0,0,0,0,0];
 
     player.nights[
         nightIdx
@@ -816,10 +788,6 @@ async function(
     );
 
 }
-
-// =====================================
-// LEGS UPDATE
-// =====================================
 
 window.updateLegsWon =
 async function(
@@ -836,7 +804,7 @@ async function(
       ];
 
     const player =
-      league.players.find(
+      (league.players || []).find(
         p=>p.id===playerId
       );
 
@@ -850,10 +818,6 @@ async function(
     );
 
 }
-
-// =====================================
-// RENDER LEAGUE
-// =====================================
 
 function renderLeague(
     leagueKey
@@ -937,6 +901,8 @@ function renderLeague(
     players.forEach(
       (player,index)=>{
 
+      const nights = player.nights || [0,0,0,0,0];
+
       html += `
 
       <tr class="border-b border-gray-800 hover:bg-black/40">
@@ -952,7 +918,7 @@ function renderLeague(
       ${player.name}
       </td>
 
-      ${player.nights.map(
+      ${nights.map(
 
         (score,night)=>
 
@@ -982,7 +948,7 @@ function renderLeague(
 
       <input
 
-        value="${player.legsWon}"
+        value="${player.legsWon || 0}"
 
         onchange="updateLegsWon(
            '${leagueKey}',
@@ -1073,47 +1039,44 @@ function renderLeague(
 
 }
 
-// =====================================
-// DASHBOARD UPDATE
-// =====================================
-
 function updateDashboard(){
 
+    const l1 = (window.appData.league1 && window.appData.league1.players) || [];
+    const l2 = (window.appData.league2 && window.appData.league2.players) || [];
+
     const allPlayers = [
-
-        ...window.appData
-        .league1.players,
-
-        ...window.appData
-        .league2.players
-
+        ...l1.map(p => ({...p, leagueKey: 'league1'})),
+        ...l2.map(p => ({...p, leagueKey: 'league2'}))
     ];
 
     if(allPlayers.length === 0) {
         document.getElementById("leaderCard").innerHTML = "--";
+        document.getElementById("most180sCard").innerHTML = "--";
+        document.getElementById("checkoutCard").innerHTML = "--";
         return;
     }
 
-    const leader =
-      [...allPlayers].sort(
-       (a,b)=>
-        totalPoints(b)
-        -
-        totalPoints(a)
-      )[0];
+    // 1. League Leader across the entire community
+    const leader = [...allPlayers].sort((a,b) => totalPoints(b) - totalPoints(a))[0];
+    document.getElementById("leaderCard").innerHTML = leader ? leader.name : "--";
 
-    document
-      .getElementById(
-         "leaderCard"
-      )
-      .innerHTML =
-      leader.name;
+    // 2. Most 180s
+    const top180 = [...allPlayers].sort((a,b) => ((b.stats && b.stats.s180) || 0) - ((a.stats && a.stats.s180) || 0))[0];
+    if (top180 && top180.stats && top180.stats.s180 > 0) {
+        document.getElementById("most180sCard").innerHTML = `${top180.name} (${top180.stats.s180})`;
+    } else {
+        document.getElementById("most180sCard").innerHTML = "--";
+    }
+
+    // 3. Highest Checkout
+    const topCheckout = [...allPlayers].sort((a,b) => ((b.stats && b.stats.highestCheckout) || 0) - ((a.stats && a.stats.highestCheckout) || 0))[0];
+    if (topCheckout && topCheckout.stats && topCheckout.stats.highestCheckout > 0) {
+        document.getElementById("checkoutCard").innerHTML = `${topCheckout.name} (${topCheckout.stats.highestCheckout})`;
+    } else {
+        document.getElementById("checkoutCard").innerHTML = "--";
+    }
 
 }
-
-// =====================================
-// START LEAGUES
-// =====================================
 
 window.addEventListener(
 
@@ -1772,9 +1735,12 @@ function renderProfiles() {
     const container = document.getElementById("profilesContainer");
     if(!container) return;
 
+    const l1 = (window.appData.league1 && window.appData.league1.players) || [];
+    const l2 = (window.appData.league2 && window.appData.league2.players) || [];
+
     const allPlayers = [
-        ...window.appData.league1.players.map(p => ({...p, leagueKey: 'league1'})),
-        ...window.appData.league2.players.map(p => ({...p, leagueKey: 'league2'}))
+        ...l1.map(p => ({...p, leagueKey: 'league1'})),
+        ...l2.map(p => ({...p, leagueKey: 'league2'}))
     ];
 
     if(allPlayers.length === 0) {
@@ -1831,7 +1797,7 @@ window.uploadPlayerAvatar = async function(leagueKey, playerId, inputElement) {
     reader.onload = async function(e) {
         const base64Image = e.target.result;
         const league = window.appData[leagueKey];
-        const player = league.players.find(p => p.id === playerId);
+        const player = (league.players || []).find(p => p.id === playerId);
         if(player) {
             player.avatar = base64Image;
             await saveLeague(leagueKey);
@@ -1845,7 +1811,7 @@ window.uploadPlayerAvatar = async function(leagueKey, playerId, inputElement) {
 
 window.updatePlayerBio = async function(leagueKey, playerId, bioText) {
     const league = window.appData[leagueKey];
-    const player = league.players.find(p => p.id === playerId);
+    const player = (league.players || []).find(p => p.id === playerId);
     if(player) {
         player.bio = bioText;
         await saveLeague(leagueKey);
@@ -1886,6 +1852,8 @@ window.addHOFEntry = async function() {
     const achievement = prompt("What did they win / Description:");
     if(!achievement) return;
 
+    if(!window.appData.hallOfFame) window.appData.hallOfFame = [];
+
     window.appData.hallOfFame.push({
         id: crypto.randomUUID(),
         name,
@@ -1899,7 +1867,7 @@ window.addHOFEntry = async function() {
 window.deleteHOFEntry = async function(id) {
     if(!window.isAdmin) return;
     if(!confirm("Delete this Hall of Fame entry?")) return;
-    window.appData.hallOfFame = window.appData.hallOfFame.filter(e => e.id !== id);
+    window.appData.hallOfFame = (window.appData.hallOfFame || []).filter(e => e.id !== id);
     await saveHOF();
     renderHOF();
 }
@@ -1943,16 +1911,14 @@ function renderHOF() {
     container.innerHTML = html;
 }
 
-<script>
 // =====================================
-// UPDATED STATISTICS & DASHBOARD ENGINE
+// STATISTICS & PLAYER EDIT ENGINE
 // =====================================
 
-// Update individual player stats (180s or Checkout)
 window.updatePlayerStat = async function(leagueKey, playerId, statField, value) {
     if (!window.isAdmin) return;
     const league = window.appData[leagueKey];
-    const player = league.players.find(p => p.id === playerId);
+    const player = (league.players || []).find(p => p.id === playerId);
     if (!player) return;
 
     if (!player.stats) {
@@ -1964,49 +1930,16 @@ window.updatePlayerStat = async function(leagueKey, playerId, statField, value) 
     renderStats();
 }
 
-// Enhanced Dashboard Update
-function updateDashboard(){
-    const allPlayers = [
-        ...window.appData.league1.players.map(p => ({...p, leagueKey: 'league1'})),
-        ...window.appData.league2.players.map(p => ({...p, leagueKey: 'league2'}))
-    ];
-
-    if(allPlayers.length === 0) {
-        document.getElementById("leaderCard").innerHTML = "--";
-        document.getElementById("most180sCard").innerHTML = "--";
-        document.getElementById("checkoutCard").innerHTML = "--";
-        return;
-    }
-
-    // 1. League Leader (by points)
-    const leader = [...allPlayers].sort((a,b) => totalPoints(b) - totalPoints(a))[0];
-    document.getElementById("leaderCard").innerHTML = leader ? leader.name : "--";
-
-    // 2. Most 180s Leader
-    const top180 = [...allPlayers].sort((a,b) => (b.stats?.s180 || 0) - (a.stats?.s180 || 0))[0];
-    if (top180 && (top180.stats?.s180 || 0) > 0) {
-        document.getElementById("most180sCard").innerHTML = `${top180.name} (${top180.stats.s180})`;
-    } else {
-        document.getElementById("most180sCard").innerHTML = "0";
-    }
-
-    // 3. Highest Checkout Leader
-    const topCheckout = [...allPlayers].sort((a,b) => (b.stats?.highestCheckout || 0) - (a.stats?.highestCheckout || 0))[0];
-    if (topCheckout && (topCheckout.stats?.highestCheckout || 0) > 0) {
-        document.getElementById("checkoutCard").innerHTML = `${topCheckout.name} (${topCheckout.stats.highestCheckout})`;
-    } else {
-        document.getElementById("checkoutCard").innerHTML = "0";
-    }
-}
-
-// Render Statistics View with Admin Edit Inputs
 function renderStats() {
     const container = document.getElementById("statsContainer");
     if(!container) return;
 
+    const l1 = (window.appData.league1 && window.appData.league1.players) || [];
+    const l2 = (window.appData.league2 && window.appData.league2.players) || [];
+
     const allPlayers = [
-        ...window.appData.league1.players.map(p => ({...p, leagueKey: 'league1'})),
-        ...window.appData.league2.players.map(p => ({...p, leagueKey: 'league2'}))
+        ...l1.map(p => ({...p, leagueKey: 'league1'})),
+        ...l2.map(p => ({...p, leagueKey: 'league2'}))
     ];
 
     if(allPlayers.length === 0) {
@@ -2039,16 +1972,16 @@ function renderStats() {
                 ${p.name}
             </td>
             <td class="p-3 text-xs uppercase text-gray-400 font-semibold">${p.leagueKey === 'league1' ? 'League 1' : 'League 2'}</td>
-            <td class="p-3 font-semibold text-yellow-400">${p.legsWon}</td>
+            <td class="p-3 font-semibold text-yellow-400">${p.legsWon || 0}</td>
             <td class="p-3 font-black text-red-500">${totalPoints(p)}</td>
             <td class="p-3">
-                <input type="number" value="${stats.s180}" 
+                <input type="number" value="${stats.s180 || 0}" 
                     onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 's180', this.value)"
                     class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold"
                     ${!window.isAdmin ? 'disabled' : ''}>
             </td>
             <td class="p-3">
-                <input type="number" value="${stats.highestCheckout}" 
+                <input type="number" value="${stats.highestCheckout || 0}" 
                     onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 'highestCheckout', this.value)"
                     class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold"
                     ${!window.isAdmin ? 'disabled' : ''}>
@@ -2060,7 +1993,14 @@ function renderStats() {
     container.innerHTML = html;
     updateDashboard();
 }
+
+window.addEventListener("load", () => {
+    setTimeout(() => {
+        subscribeHOF();
+    }, 2000);
+});
+
 </script>
-    
+
 </body>
 </html>
