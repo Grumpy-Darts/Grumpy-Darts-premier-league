@@ -377,80 +377,38 @@ const firebaseConfig = {
 
 };
 
-const ADMIN_UID =
-"ZowpPthsrHUhJicRwDNn3etUac02";
+const ADMIN_UID = "ZowpPthsrHUhJicRwDNn3etUac02";
 
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 window.firebaseDB = db;
 
 window.loginAdmin = async function(){
-
-    const provider =
-        new GoogleAuthProvider();
-
+    const provider = new GoogleAuthProvider();
     try{
-
-        await signInWithPopup(
-            auth,
-            provider
-        );
-
+        await signInWithPopup(auth, provider);
     }catch(err){
-
         console.error(err);
-
     }
-
 }
 
 window.logoutAdmin = async function(){
-
     await signOut(auth);
-
 }
 
-onAuthStateChanged(auth,user=>{
-
-    if(
-        user &&
-        user.uid === ADMIN_UID
-    ){
-
+onAuthStateChanged(auth, user=>{
+    if(user && user.uid === ADMIN_UID){
         window.isAdmin = true;
-
-        document
-        .getElementById("adminBanner")
-        .classList.remove("hidden");
-
-        document
-        .getElementById("loginBtn")
-        .classList.add("hidden");
-
-        document
-        .getElementById("logoutBtn")
-        .classList.remove("hidden");
-
-    }
-    else{
-
+        document.getElementById("adminBanner").classList.remove("hidden");
+        document.getElementById("loginBtn").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+    } else {
         window.isAdmin = false;
-
-        document
-        .getElementById("adminBanner")
-        .classList.add("hidden");
-
-        document
-        .getElementById("loginBtn")
-        .classList.remove("hidden");
-
-        document
-        .getElementById("logoutBtn")
-        .classList.add("hidden");
-
+        document.getElementById("adminBanner").classList.add("hidden");
+        document.getElementById("loginBtn").classList.remove("hidden");
+        document.getElementById("logoutBtn").classList.add("hidden");
     }
 
     if(typeof renderLeague === 'function') {
@@ -461,7 +419,6 @@ onAuthStateChanged(auth,user=>{
     if(typeof renderProfiles === 'function') renderProfiles();
     if(typeof renderHOF === 'function') renderHOF();
     if(typeof renderStats === 'function') renderStats();
-
 });
 
 window.firestore = {
@@ -478,46 +435,26 @@ window.firestore = {
 window.isAdmin = false;
 
 function notify(message){
-
-    const n =
-      document.getElementById(
-      "notification");
-
+    const n = document.getElementById("notification");
     n.innerHTML = message;
-
-    n.className =
-      "p-4 rounded-xl text-center bg-orange-900";
-
+    n.className = "p-4 rounded-xl text-center bg-orange-900 text-white font-bold";
     n.classList.remove("hidden");
-
     setTimeout(()=>{
       n.classList.add("hidden");
-    },3000)
-
+    }, 3000);
 }
 
 function switchView(view, evt){
+    document.querySelectorAll('[id$="-view"]').forEach(v => v.classList.add('hidden'));
+    document.getElementById(view + "-view").classList.remove('hidden');
 
-    document
-    .querySelectorAll(
-      '[id$="-view"]'
-    )
-    .forEach(v=>v.classList.add('hidden'));
-
-    document
-    .getElementById(
-      view + "-view"
-    )
-    .classList.remove('hidden');
-
-    document
-    .querySelectorAll('.nav-btn')
-    .forEach(b => b.classList.remove('nav-active', 'bg-grumpyRed'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active', 'bg-grumpyRed'));
     
     if(evt && evt.currentTarget) {
         evt.currentTarget.classList.add('nav-active', 'bg-grumpyRed');
+    } else {
+        event.target.classList.add('nav-active', 'bg-grumpyRed');
     }
-
 }
 
 </script>
@@ -525,360 +462,154 @@ function switchView(view, evt){
 <script>
 
 // =====================================
-// GRUMPY DARTS V2 - LEAGUE ENGINE
+// GRUMPY DARTS V2 - CORE ENGINE
 // =====================================
 
 window.appData = {
-
-    league1: {
-        players:[]
-    },
-
-    league2: {
-        players:[]
-    },
-
+    league1: { players: [] },
+    league2: { players: [] },
     fixtures: [],
-
     hallOfFame: []
-
 };
 
 const LEAGUE1_DOC = "league1";
 const LEAGUE2_DOC = "league2";
 const HOF_DOC = "hallOfFame";
+const FIXTURES_DOC = "fixtures";
 
 function createPlayer(name){
-
     return {
-
         id: crypto.randomUUID(),
-
         name,
-
         avatar: "",
-
         bio: "No bio added yet.",
-
-        nights:[
-            0,
-            0,
-            0,
-            0,
-            0
-        ],
-
-        legsWon:0,
-
-        stats:{
-            s180:0,
-            highestCheckout:0,
-            bestAverage:0
+        nights: [0, 0, 0, 0, 0],
+        legsWon: 0,
+        stats: {
+            s180: 0,
+            highestCheckout: 0,
+            bestAverage: 0
         }
-
     };
-
 }
 
 function totalPoints(player){
-
-    return (player.nights || []).reduce(
-        (a,b)=>a+b,
-        0
-    );
-
+    return (player.nights || []).reduce((a, b) => a + b, 0);
 }
 
 function getSortedPlayers(league){
-
-    return [...(league.players || [])].sort((a,b)=>{
-
+    return [...(league.players || [])].sort((a, b) => {
         const totalA = totalPoints(a);
-
         const totalB = totalPoints(b);
-
         if(totalB !== totalA){
-
             return totalB - totalA;
-
         }
-
-        return (
-            (b.legsWon || 0) -
-            (a.legsWon || 0)
-        );
-
+        return (b.legsWon || 0) - (a.legsWon || 0);
     });
-
 }
 
 async function saveLeague(leagueKey){
-
-    if(!window.firebaseDB)
-        return;
-
+    if(!window.firebaseDB) return;
     try{
-
         await window.firestore.setDoc(
-
-            window.firestore.doc(
-                window.firebaseDB,
-                "grumpy-darts",
-                leagueKey
-            ),
-
+            window.firestore.doc(window.firebaseDB, "grumpy-darts", leagueKey),
             window.appData[leagueKey]
-
         );
-
-    }
-    catch(err){
-
+    } catch(err){
         console.error(err);
-
     }
-
 }
 
 function subscribeLeague(leagueKey){
-
-    const docRef =
-        window.firestore.doc(
-            window.firebaseDB,
-            "grumpy-darts",
-            leagueKey
-        );
-
-    window.firestore.onSnapshot(
-
-        docRef,
-
-        snapshot=>{
-
-            if(snapshot.exists()){
-
-                window.appData[
-                    leagueKey
-                ] = snapshot.data();
-
-            }
-            else{
-
-                saveLeague(
-                    leagueKey
-                );
-
-            }
-
-            renderLeague(
-                leagueKey
-            );
-            renderProfiles();
-            renderStats();
-
+    const docRef = window.firestore.doc(window.firebaseDB, "grumpy-darts", leagueKey);
+    window.firestore.onSnapshot(docRef, snapshot => {
+        if(snapshot.exists()){
+            window.appData[leagueKey] = snapshot.data();
+        } else {
+            saveLeague(leagueKey);
         }
-
-    );
-
+        renderLeague(leagueKey);
+        renderProfiles();
+        renderStats();
+    });
 }
 
-window.addPlayer = async function(
-    leagueKey
-){
-
+window.addPlayer = async function(leagueKey){
     if(!window.isAdmin){
-
-        notify(
-            "Admin only"
-        );
-
+        notify("Admin only");
         return;
     }
-
-    const playerName =
-        prompt(
-            "Player Name"
-        );
-
-    if(!playerName)
-        return;
+    const playerName = prompt("Player Name");
+    if(!playerName) return;
 
     if(!window.appData[leagueKey].players) {
         window.appData[leagueKey].players = [];
     }
 
-    window.appData[
-        leagueKey
-    ].players.push(
-
-        createPlayer(
-            playerName
-        )
-
-    );
-
-    await saveLeague(
-        leagueKey
-    );
+    window.appData[leagueKey].players.push(createPlayer(playerName));
+    await saveLeague(leagueKey);
     renderProfiles();
-
+    renderStats();
 }
 
-window.deletePlayer =
-async function(
-    leagueKey,
-    playerId
-){
+window.deletePlayer = async function(leagueKey, playerId){
+    if(!window.isAdmin) return;
+    if(!confirm("Delete player?")) return;
 
-    if(!window.isAdmin)
-        return;
-
-    if(
-        !confirm(
-            "Delete player?"
-        )
-    ) return;
-
-    const league =
-     window.appData[
-      leagueKey
-     ];
-
-    league.players =
-      (league.players || []).filter(
-       p=>p.id!==playerId
-      );
-
-    await saveLeague(
-      leagueKey
-    );
+    const league = window.appData[leagueKey];
+    league.players = (league.players || []).filter(p => p.id !== playerId);
+    await saveLeague(leagueKey);
     renderProfiles();
-
+    renderStats();
 }
 
-window.updateNightScore =
-async function(
-
-    leagueKey,
-    playerId,
-    nightIdx,
-    value
-
-){
-
-    const league =
-      window.appData[leagueKey];
-
-    const player =
-      (league.players || []).find(
-       p=>p.id===playerId
-      );
-
+window.updateNightScore = async function(leagueKey, playerId, nightIdx, value){
+    const league = window.appData[leagueKey];
+    const player = (league.players || []).find(p => p.id === playerId);
     if(!player) return;
 
-    if(!player.nights) player.nights = [0,0,0,0,0];
-
-    player.nights[
-        nightIdx
-    ] =
-    parseInt(value)||0;
-
-    await saveLeague(
-        leagueKey
-    );
-
+    if(!player.nights) player.nights = [0, 0, 0, 0, 0];
+    player.nights[nightIdx] = parseInt(value) || 0;
+    await saveLeague(leagueKey);
+    updateDashboard();
 }
 
-window.updateLegsWon =
-async function(
-
-    leagueKey,
-    playerId,
-    value
-
-){
-
-    const league =
-      window.appData[
-       leagueKey
-      ];
-
-    const player =
-      (league.players || []).find(
-        p=>p.id===playerId
-      );
-
+window.updateLegsWon = async function(leagueKey, playerId, value){
+    const league = window.appData[leagueKey];
+    const player = (league.players || []).find(p => p.id === playerId);
     if(!player) return;
 
-    player.legsWon =
-      parseInt(value)||0;
-
-    await saveLeague(
-      leagueKey
-    );
-
+    player.legsWon = parseInt(value) || 0;
+    await saveLeague(leagueKey);
+    updateDashboard();
 }
 
-function renderLeague(
-    leagueKey
-){
+function renderLeague(leagueKey){
+    const container = document.getElementById(leagueKey + "Container");
+    if(!container) return;
 
-    const container =
-     document.getElementById(
-      leagueKey +
-      "Container"
-     );
-
-    if(!container)
-        return;
-
-    const league =
-     window.appData[
-       leagueKey
-     ];
-
-    const players =
-      getSortedPlayers(
-       league
-      );
+    const league = window.appData[leagueKey];
+    const players = getSortedPlayers(league);
 
     let html = "";
 
-    if(players.length===0){
-
+    if(players.length === 0){
         html = `
-
         <div class="text-center py-10 text-gray-500">
-
             No players added yet.
-
-            ${
-                window.isAdmin
-                ? '<div class="mt-4"><button onclick="addPlayer(\'' + leagueKey + '\')" class="bg-red-600 px-4 py-2 rounded-xl text-white font-bold">Add Player</button></div>'
-                : ''
-            }
-
+            ${window.isAdmin ? '<div class="mt-4"><button onclick="addPlayer(\'' + leagueKey + '\')" class="bg-red-600 px-4 py-2 rounded-xl text-white font-bold">Add Player</button></div>' : ''}
         </div>
-
         `;
-
-        container.innerHTML =
-         html;
-
+        container.innerHTML = html;
+        updateDashboard();
         return;
-
     }
 
     html += `
-
     <div class="overflow-x-auto">
-
     <table class="w-full text-left">
-
     <thead>
-
     <tr class="border-b border-orange-500 text-orange-400">
-
         <th class="p-2">Pos</th>
         <th class="p-2">Name</th>
         <th class="p-2">N1</th>
@@ -889,158 +620,58 @@ function renderLeague(
         <th class="p-2">Legs</th>
         <th class="p-2">Total</th>
         ${window.isAdmin ? '<th class="p-2">Action</th>' : ''}
-
     </tr>
-
     </thead>
-
     <tbody>
-
     `;
 
-    players.forEach(
-      (player,index)=>{
-
-      const nights = player.nights || [0,0,0,0,0];
-
-      html += `
-
-      <tr class="border-b border-gray-800 hover:bg-black/40">
-
-      <td class="p-2 font-black">
-
-      ${index+1}
-
-      </td>
-
-      <td class="p-2 font-bold flex items-center gap-2">
-      ${player.avatar ? `<img src="${player.avatar}" class="w-7 h-7 rounded-full object-cover">` : ''}
-      ${player.name}
-      </td>
-
-      ${nights.map(
-
-        (score,night)=>
-
-        `<td class="p-2">
-
-        <input
-            value="${score}"
-
-            onchange="updateNightScore(
-            '${leagueKey}',
-            '${player.id}',
-            ${night},
-            this.value
-            )"
-
+    players.forEach((player, index)=>{
+        const nights = player.nights || [0, 0, 0, 0, 0];
+        html += `
+        <tr class="border-b border-gray-800 hover:bg-black/40">
+        <td class="p-2 font-black">${index + 1}</td>
+        <td class="p-2 font-bold flex items-center gap-2">
+            ${player.avatar ? `<img src="${player.avatar}" class="w-7 h-7 rounded-full object-cover">` : ''}
+            ${player.name}
+        </td>
+        ${nights.map((score, night)=>`
+            <td class="p-2">
+            <input value="${score}"
+                onchange="updateNightScore('${leagueKey}', '${player.id}', ${night}, this.value)"
+                class="w-14 bg-black border border-gray-700 rounded p-1 text-center text-white"
+                ${!window.isAdmin ? 'disabled' : ''}>
+            </td>
+        `).join("")}
+        <td class="p-2">
+        <input value="${player.legsWon || 0}"
+            onchange="updateLegsWon('${leagueKey}', '${player.id}', this.value)"
             class="w-14 bg-black border border-gray-700 rounded p-1 text-center text-white"
-
-            ${!window.isAdmin ? 'disabled' : ''}
-
-        >
-
-        </td>`
-
-      ).join("")}
-
-      <td class="p-2">
-
-      <input
-
-        value="${player.legsWon || 0}"
-
-        onchange="updateLegsWon(
-           '${leagueKey}',
-           '${player.id}',
-           this.value
-        )"
-
-        class="w-14 bg-black border border-gray-700 rounded p-1 text-center text-white"
-
-        ${!window.isAdmin ? 'disabled' : ''}
-
-      >
-
-      </td>
-
-      <td class="p-2 font-black text-red-500 text-lg">
-
-      ${totalPoints(player)}
-
-      </td>
-
-      ${window.isAdmin ?
-
-      `<td class="p-2">
-
-        <button
-          onclick="deletePlayer(
-            '${leagueKey}',
-            '${player.id}'
-          )"
-
-          class="text-red-500 font-bold px-2 py-1 bg-red-950/40 rounded hover:bg-red-900">
-
-          ✕
-
-        </button>
-
-      </td>`
-
-      :
-
-      ''
-
-      }
-
-      </tr>
-
-      `;
-
+            ${!window.isAdmin ? 'disabled' : ''}>
+        </td>
+        <td class="p-2 font-black text-red-500 text-lg">${totalPoints(player)}</td>
+        ${window.isAdmin ? `
+        <td class="p-2">
+            <button onclick="deletePlayer('${leagueKey}', '${player.id}')" class="text-red-500 font-bold px-2 py-1 bg-red-950/40 rounded hover:bg-red-900">✕</button>
+        </td>` : ''}
+        </tr>
+        `;
     });
 
-    html += `
-
-    </tbody>
-
-    </table>
-
-    </div>
-
-    `;
+    html += `</tbody></table></div>`;
 
     if(window.isAdmin){
-
         html += `
-
         <div class="mt-4">
-
-            <button
-
-              onclick="addPlayer('${leagueKey}')"
-
-              class="bg-grumpyRed px-4 py-2 rounded-xl font-bold text-white">
-
-                Add Player
-
-            </button>
-
+            <button onclick="addPlayer('${leagueKey}')" class="bg-grumpyRed px-4 py-2 rounded-xl font-bold text-white">Add Player</button>
         </div>
-
         `;
-
     }
 
-    container.innerHTML =
-      html;
-
+    container.innerHTML = html;
     updateDashboard();
-
 }
 
 function updateDashboard(){
-
     const l1 = (window.appData.league1 && window.appData.league1.players) || [];
     const l2 = (window.appData.league2 && window.appData.league2.players) || [];
 
@@ -1056,679 +687,183 @@ function updateDashboard(){
         return;
     }
 
-    // 1. League Leader across the entire community
-    const leader = [...allPlayers].sort((a,b) => totalPoints(b) - totalPoints(a))[0];
+    const leader = [...allPlayers].sort((a, b) => totalPoints(b) - totalPoints(a))[0];
     document.getElementById("leaderCard").innerHTML = leader ? leader.name : "--";
 
-    // 2. Most 180s
-    const top180 = [...allPlayers].sort((a,b) => ((b.stats && b.stats.s180) || 0) - ((a.stats && a.stats.s180) || 0))[0];
+    const top180 = [...allPlayers].sort((a, b) => ((b.stats && b.stats.s180) || 0) - ((a.stats && a.stats.s180) || 0))[0];
     if (top180 && top180.stats && top180.stats.s180 > 0) {
         document.getElementById("most180sCard").innerHTML = `${top180.name} (${top180.stats.s180})`;
     } else {
         document.getElementById("most180sCard").innerHTML = "--";
     }
 
-    // 3. Highest Checkout
-    const topCheckout = [...allPlayers].sort((a,b) => ((b.stats && b.stats.highestCheckout) || 0) - ((a.stats && a.stats.highestCheckout) || 0))[0];
+    const topCheckout = [...allPlayers].sort((a, b) => ((b.stats && b.stats.highestCheckout) || 0) - ((a.stats && a.stats.highestCheckout) || 0))[0];
     if (topCheckout && topCheckout.stats && topCheckout.stats.highestCheckout > 0) {
         document.getElementById("checkoutCard").innerHTML = `${topCheckout.name} (${topCheckout.stats.highestCheckout})`;
     } else {
         document.getElementById("checkoutCard").innerHTML = "--";
     }
-
 }
 
-window.addEventListener(
-
-   "load",
-
-   ()=>{
-
-     setTimeout(()=>{
-
-      subscribeLeague(
-        LEAGUE1_DOC
-      );
-
-      subscribeLeague(
-        LEAGUE2_DOC
-      );
-
-     },1500);
-
-   }
-
-);
-
-</script>
-
-<script>
-
 // =====================================
-// FIXTURES ENGINE V2
+// FIXTURES ENGINE
 // =====================================
-
-const FIXTURES_DOC = "fixtures";
 
 function createFixture(){
-
     return {
-
         id: crypto.randomUUID(),
-
-        night:"Night 1",
-
-        player1:"",
-
-        player2:"",
-
-        score1:null,
-
-        score2:null,
-
-        date:"",
-
-        tikTokLink:"",
-
-        league:"League 1",
-
-        status:"Upcoming"
-
+        night: "Night 1",
+        player1: "",
+        player2: "",
+        score1: null,
+        score2: null,
+        date: "",
+        tikTokLink: "",
+        league: "League 1",
+        status: "Upcoming"
     };
-
 }
 
 function subscribeFixtures(){
-
-    const docRef =
-        window.firestore.doc(
-            window.firebaseDB,
-            "grumpy-darts",
-            FIXTURES_DOC
-        );
-
-    window.firestore.onSnapshot(
-
-        docRef,
-
-        snapshot=>{
-
-            if(snapshot.exists()){
-
-                const data =
-                    snapshot.data();
-
-                window.appData.fixtures =
-                    data.fixtures || [];
-
-            }
-            else{
-
-                saveFixtures();
-
-            }
-
-            renderFixtures();
-
+    const docRef = window.firestore.doc(window.firebaseDB, "grumpy-darts", FIXTURES_DOC);
+    window.firestore.onSnapshot(docRef, snapshot => {
+        if(snapshot.exists()){
+            window.appData.fixtures = snapshot.data().fixtures || [];
+        } else {
+            saveFixtures();
         }
-
-    );
-
+        renderFixtures();
+    });
 }
 
 async function saveFixtures(){
-
     try{
-
         await window.firestore.setDoc(
-
-            window.firestore.doc(
-                window.firebaseDB,
-                "grumpy-darts",
-                FIXTURES_DOC
-            ),
-
-            {
-                fixtures:
-                    window.appData.fixtures
-            }
-
+            window.firestore.doc(window.firebaseDB, "grumpy-darts", FIXTURES_DOC),
+            { fixtures: window.appData.fixtures }
         );
-
-    }
-    catch(err){
-
+    } catch(err){
         console.error(err);
-
     }
-
 }
 
-window.addFixture =
-async function(){
-
+window.addFixture = async function(){
     if(!window.isAdmin){
-
-        notify(
-            "Admin only"
-        );
-
+        notify("Admin only");
         return;
     }
+    const player1 = prompt("Player 1");
+    if(!player1) return;
+    const player2 = prompt("Player 2");
+    if(!player2) return;
 
-    const player1 =
-        prompt(
-         "Player 1"
-        );
+    const fixture = createFixture();
+    fixture.player1 = player1;
+    fixture.player2 = player2;
 
-    if(!player1)
-        return;
-
-    const player2 =
-        prompt(
-         "Player 2"
-        );
-
-    if(!player2)
-        return;
-
-    const fixture =
-        createFixture();
-
-    fixture.player1 =
-        player1;
-
-    fixture.player2 =
-        player2;
-
-    window.appData
-      .fixtures
-      .push(fixture);
-
+    window.appData.fixtures.push(fixture);
     await saveFixtures();
     renderFixtures();
-
 }
 
-window.deleteFixture =
-async function(id){
+window.deleteFixture = async function(id){
+    if(!window.isAdmin) return;
+    if(!confirm("Delete fixture?")) return;
 
-    if(!window.isAdmin)
-        return;
-
-    if(
-      !confirm(
-       "Delete fixture?"
-      )
-    )
-      return;
-
-    window.appData.fixtures =
-      window.appData.fixtures.filter(
-        f=>f.id!==id
-      );
-
+    window.appData.fixtures = window.appData.fixtures.filter(f => f.id !== id);
     await saveFixtures();
     renderFixtures();
-
 }
 
-window.updateFixture =
-async function(
-    fixtureId,
-    field,
-    value
-){
+window.updateFixture = async function(fixtureId, field, value){
+    const fixture = window.appData.fixtures.find(f => f.id === fixtureId);
+    if(!fixture) return;
 
-    const fixture =
-        window.appData.fixtures.find(
-            f=>f.id===fixtureId
-        );
-
-    if(!fixture)
-        return;
-
-    fixture[field] =
-        value;
-
+    fixture[field] = value;
     await saveFixtures();
-
 }
 
 function renderFixtures(){
-
-    const container =
-      document.getElementById(
-       "fixturesContainer"
-      );
-
-    if(!container)
-        return;
+    const container = document.getElementById("fixturesContainer");
+    if(!container) return;
 
     let html = "";
+    const fixtures = window.appData.fixtures || [];
 
-    if(
-       !window.appData.fixtures ||
-       window.appData.fixtures
-       .length === 0
-    ){
-
+    if(fixtures.length === 0){
         html = `
-
         <div class="text-center py-10 text-gray-500">
-
             No fixtures created.
-
-            ${
-                window.isAdmin
-                ?
-                `<div class="mt-4">
-
-                 <button
-                  onclick="addFixture()"
-                  class="bg-red-600 px-4 py-2 rounded-xl text-white font-bold">
-
-                  Add Fixture
-
-                 </button>
-
-                 </div>`
-                :
-                ""
-            }
-
+            ${window.isAdmin ? '<div class="mt-4"><button onclick="addFixture()" class="bg-red-600 px-4 py-2 rounded-xl text-white font-bold">Add Fixture</button></div>' : ''}
         </div>
-
         `;
-
-        container.innerHTML =
-            html;
-
+        container.innerHTML = html;
         return;
-
     }
 
-    html +=
-      `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">`;
-
-    window.appData.fixtures
-      .forEach(fixture=>{
-
-      let statusColour =
-      "bg-gray-800";
-
-      if(
-        fixture.status ===
-        "Live"
-      ){
-
-        statusColour =
-        "bg-red-600";
-
-      }
-
-      if(
-        fixture.status ===
-        "Completed"
-      ){
-
-        statusColour =
-        "bg-green-600";
-
-      }
-
-      html += `
-
-      <div class="
-      bg-grumpyCard
-      rounded-xl
-      p-4
-      border
-      border-gray-800">
-
-      <div class="flex justify-between items-center">
-
-      <span class="
-      px-2 py-1
-      rounded
-      text-xs
-      font-bold
-      ${statusColour}">
-
-      ${fixture.status}
-
-      </span>
-
-      ${
-        window.isAdmin
-        ?
-
-        `<button
-          onclick="
-          deleteFixture(
-          '${fixture.id}'
-          )"
-          class="text-red-400 font-bold">
-
-          ✕
-         </button>`
-
-        :
-
-        ""
-      }
-
-      </div>
-
-      <div class="mt-3">
-
-      <div class="
-      text-orange-400
-      text-sm
-      font-bold">
-
-      ${fixture.night}
-
-      </div>
-
-      <div class="mt-2 text-center py-2 bg-black/30 rounded-lg">
-
-      <div class="font-bold text-lg">
-
-      ${fixture.player1}
-
-      </div>
-
-      <div class="text-xs text-gray-400 my-1">
-
-      VS
-
-      </div>
-
-      <div class="font-bold text-lg">
-
-      ${fixture.player2}
-
-      </div>
-
-      </div>
-
-      </div>
-
-      <div class="mt-3">
-
-      <div class="text-sm text-gray-400">
-
-      📅 ${fixture.date || "No Date"}
-
-      </div>
-
-      </div>
-
-      <div class="mt-4 text-center">
-
-      ${
-        fixture.score1 !== null &&
-        fixture.score2 !== null &&
-        fixture.score1 !== "" &&
-        fixture.score2 !== ""
-
-        ?
-
-        `<div class="
-           text-2xl
-           font-black
-           text-yellow-400">
-
-           ${fixture.score1}
-           -
-           ${fixture.score2}
-
-         </div>`
-
-        :
-
-        `<div class="text-gray-500 text-sm italic">
-
-         Awaiting Result
-
-         </div>`
-
-      }
-
-      </div>
-
-      ${
-       fixture.tikTokLink
-
-       ?
-
-       `<a
-       href="${fixture.tikTokLink}"
-       target="_blank"
-       class="
-       mt-4
-       block
-       bg-red-600
-       text-center
-       py-2
-       rounded-xl
-       font-bold
-       text-white">
-
-       Watch Live
-
-       </a>`
-
-       :
-
-       ""
-
-      }
-
-      ${
-      window.isAdmin
-      ?
-
-      `
-
-      <div class="
-      mt-4
-      space-y-2
-      border-t
-      border-gray-800
-      pt-3">
-
-      <input
-
-      value="${fixture.night}"
-
-      onchange="
-      updateFixture(
-      '${fixture.id}',
-      'night',
-      this.value
-      )"
-
-      placeholder="Night"
-
-      class="w-full p-2 rounded bg-black text-sm text-white border border-gray-700"
-
-      >
-
-      <input
-
-      value="${fixture.date}"
-
-      onchange="
-      updateFixture(
-      '${fixture.id}',
-      'date',
-      this.value
-      )"
-
-      placeholder="Date"
-
-      class="w-full p-2 rounded bg-black text-sm text-white border border-gray-700"
-
-      >
-
-      <div class="flex gap-2">
-      <input
-
-      value="${
-       fixture.score1 ?? ''
-      }"
-
-      onchange="
-      updateFixture(
-      '${fixture.id}',
-      'score1',
-      Number(this.value)
-      )"
-
-      placeholder="P1 Score"
-
-      class="w-1/2 p-2 rounded bg-black text-sm text-white border border-gray-700"
-
-      >
-
-      <input
-
-      value="${
-       fixture.score2 ?? ''
-      }"
-
-      onchange="
-      updateFixture(
-      '${fixture.id}',
-      'score2',
-      Number(this.value)
-      )"
-
-      placeholder="P2 Score"
-
-      class="w-1/2 p-2 rounded bg-black text-sm text-white border border-gray-700"
-
-      >
-      </div>
-
-      <select
-
-      onchange="
-      updateFixture(
-      '${fixture.id}',
-      'status',
-      this.value
-      )"
-
-      class="
-      w-full
-      p-2
-      rounded
-      bg-black
-      text-sm
-      text-white
-      border
-      border-gray-700">
-
-      <option ${
-      fixture.status==="Upcoming"
-      ?"selected":""
-      }>
-
-      Upcoming
-
-      </option>
-
-      <option ${
-      fixture.status==="Live"
-      ?"selected":""
-      }>
-
-      Live
-
-      </option>
-
-      <option ${
-      fixture.status==="Completed"
-      ?"selected":""
-      }>
-
-      Completed
-
-      </option>
-
-      </select>
-
-      </div>
-
-      `
-
-      :
-
-      ""
-
-      }
-
-      </div>
-
-      `;
-
-    });
-
-    html += "</div>";
-
-    if(window.isAdmin){
+    html += `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+
+    fixtures.forEach(fixture=>{
+        let statusColour = "bg-gray-800";
+        if(fixture.status === "Live") statusColour = "bg-red-600";
+        if(fixture.status === "Completed") statusColour = "bg-green-600";
 
         html += `
-
-        <div class="mt-6">
-
-            <button
-
-            onclick="addFixture()"
-
-            class="
-            bg-grumpyRed
-            px-5
-            py-2
-            rounded-xl
-            font-bold
-            text-white">
-
-            Add Fixture
-
-            </button>
-
+        <div class="bg-grumpyCard rounded-xl p-4 border border-gray-800">
+            <div class="flex justify-between items-center">
+                <span class="px-2 py-1 rounded text-xs font-bold ${statusColour}">${fixture.status}</span>
+                ${window.isAdmin ? `<button onclick="deleteFixture('${fixture.id}')" class="text-red-400 font-bold">✕</button>` : ''}
+            </div>
+            <div class="mt-3">
+                <div class="text-orange-400 text-sm font-bold">${fixture.night}</div>
+                <div class="mt-2 text-center py-2 bg-black/30 rounded-lg">
+                    <div class="font-bold text-lg">${fixture.player1}</div>
+                    <div class="text-xs text-gray-400 my-1">VS</div>
+                    <div class="font-bold text-lg">${fixture.player2}</div>
+                </div>
+            </div>
+            <div class="mt-3 text-sm text-gray-400">📅 ${fixture.date || "No Date"}</div>
+            <div class="mt-4 text-center">
+                ${fixture.score1 !== null && fixture.score2 !== null && fixture.score1 !== "" && fixture.score2 !== "" ?
+                    `<div class="text-2xl font-black text-yellow-400">${fixture.score1} - ${fixture.score2}</div>` :
+                    `<div class="text-gray-500 text-sm italic">Awaiting Result</div>`
+                }
+            </div>
+            ${fixture.tikTokLink ? `<a href="${fixture.tikTokLink}" target="_blank" class="mt-4 block bg-red-600 text-center py-2 rounded-xl font-bold text-white">Watch Live</a>` : ''}
+            
+            ${window.isAdmin ? `
+            <div class="mt-4 space-y-2 border-t border-gray-800 pt-3">
+                <input value="${fixture.night}" onchange="updateFixture('${fixture.id}', 'night', this.value)" placeholder="Night" class="w-full p-2 rounded bg-black text-sm text-white border border-gray-700">
+                <input value="${fixture.date}" onchange="updateFixture('${fixture.id}', 'date', this.value)" placeholder="Date" class="w-full p-2 rounded bg-black text-sm text-white border border-gray-700">
+                <div class="flex gap-2">
+                    <input value="${fixture.score1 ?? ''}" onchange="updateFixture('${fixture.id}', 'score1', Number(this.value))" placeholder="P1 Score" class="w-1/2 p-2 rounded bg-black text-sm text-white border border-gray-700">
+                    <input value="${fixture.score2 ?? ''}" onchange="updateFixture('${fixture.id}', 'score2', Number(this.value))" placeholder="P2 Score" class="w-1/2 p-2 rounded bg-black text-sm text-white border border-gray-700">
+                </div>
+                <select onchange="updateFixture('${fixture.id}', 'status', this.value)" class="w-full p-2 rounded bg-black text-sm text-white border border-gray-700">
+                    <option ${fixture.status==="Upcoming"?"selected":""}>Upcoming</option>
+                    <option ${fixture.status==="Live"?"selected":""}>Live</option>
+                    <option ${fixture.status==="Completed"?"selected":""}>Completed</option>
+                </select>
+            </div>` : ''}
         </div>
-
         `;
+    });
 
+    html += `</div>`;
+
+    if(window.isAdmin){
+        html += `
+        <div class="mt-6">
+            <button onclick="addFixture()" class="bg-grumpyRed px-5 py-2 rounded-xl font-bold text-white">Add Fixture</button>
+        </div>
+        `;
     }
 
-    container.innerHTML =
-      html;
-
+    container.innerHTML = html;
 }
 
-window.addEventListener(
- "load",
- ()=>{
-
-    setTimeout(()=>{
-
-        subscribeFixtures();
-
-    },1800);
-
- });
-
-</script>
-
-<script>
 // =====================================
-// PROFILES & AVATAR UPLOADER ENGINE
+// PROFILES ENGINE
 // =====================================
 
 function renderProfiles() {
@@ -1754,33 +889,21 @@ function renderProfiles() {
         html += `
         <div class="bg-grumpyCard rounded-2xl p-5 border border-gray-800 flex flex-col items-center text-center">
             <div class="relative w-24 h-24 mb-4">
-                <img src="${player.avatar || 'https://via.placeholder.com/96?text=Avatar'}" 
-                     class="w-24 h-24 rounded-full object-cover border-2 border-orange-500 shadow-lg">
+                <img src="${player.avatar || 'https://via.placeholder.com/96?text=Avatar'}" class="w-24 h-24 rounded-full object-cover border-2 border-orange-500 shadow-lg">
             </div>
-
             <h3 class="text-xl font-black text-white">${player.name}</h3>
             <span class="text-xs uppercase px-2 py-0.5 mt-1 rounded bg-orange-950 text-orange-400 font-bold">
                 ${player.leagueKey === 'league1' ? 'League 1' : 'League 2'}
             </span>
-
             <p class="mt-3 text-sm text-gray-300 italic bg-black/40 p-3 rounded-xl w-full">
                 "${player.bio || 'No bio provided.'}"
             </p>
-
             ${window.isAdmin ? `
             <div class="mt-4 w-full space-y-2 border-t border-gray-800 pt-3">
                 <label class="block text-xs text-left text-gray-400 font-bold">Upload PNG Avatar / Logo:</label>
-                <input type="file" accept="image/png, image/jpeg" 
-                       onchange="uploadPlayerAvatar('${player.leagueKey}', '${player.id}', this)"
-                       class="w-full text-xs text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-grumpyRed file:text-white hover:file:bg-red-700">
-
-                <textarea 
-                    onchange="updatePlayerBio('${player.leagueKey}', '${player.id}', this.value)"
-                    placeholder="Player Bio / Nickname"
-                    class="w-full p-2 bg-black text-xs text-white rounded border border-gray-700"
-                    rows="2">${player.bio || ''}</textarea>
-            </div>
-            ` : ''}
+                <input type="file" accept="image/png, image/jpeg" onchange="uploadPlayerAvatar('${player.leagueKey}', '${player.id}', this)" class="w-full text-xs text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-grumpyRed file:text-white hover:file:bg-red-700">
+                <textarea onchange="updatePlayerBio('${player.leagueKey}', '${player.id}', this.value)" placeholder="Player Bio / Nickname" class="w-full p-2 bg-black text-xs text-white rounded border border-gray-700" rows="2">${player.bio || ''}</textarea>
+            </div>` : ''}
         </div>
         `;
     });
@@ -1853,12 +976,7 @@ window.addHOFEntry = async function() {
     if(!achievement) return;
 
     if(!window.appData.hallOfFame) window.appData.hallOfFame = [];
-
-    window.appData.hallOfFame.push({
-        id: crypto.randomUUID(),
-        name,
-        achievement
-    });
+    window.appData.hallOfFame.push({ id: crypto.randomUUID(), name, achievement });
 
     await saveHOF();
     renderHOF();
@@ -1889,10 +1007,7 @@ function renderHOF() {
                 <div class="text-3xl mb-2">🏆</div>
                 <h3 class="text-xl font-black text-yellow-400">${entry.name}</h3>
                 <p class="mt-3 text-sm text-gray-300 bg-black/40 p-3 rounded-xl">${entry.achievement}</p>
-                ${window.isAdmin ? `
-                <button onclick="deleteHOFEntry('${entry.id}')" class="mt-4 text-xs bg-red-950 text-red-400 px-3 py-1 rounded hover:bg-red-900 font-bold">
-                    Remove Entry
-                </button>` : ''}
+                ${window.isAdmin ? `<button onclick="deleteHOFEntry('${entry.id}')" class="mt-4 text-xs bg-red-950 text-red-400 px-3 py-1 rounded hover:bg-red-900 font-bold">Remove Entry</button>` : ''}
             </div>
             `;
         });
@@ -1902,9 +1017,7 @@ function renderHOF() {
     if(window.isAdmin) {
         html += `
         <div class="mt-6 text-center">
-            <button onclick="addHOFEntry()" class="bg-grumpyRed px-5 py-2 rounded-xl font-bold text-white">
-                Add Hall of Fame Entry
-            </button>
+            <button onclick="addHOFEntry()" class="bg-grumpyRed px-5 py-2 rounded-xl font-bold text-white">Add Hall of Fame Entry</button>
         </div>`;
     }
 
@@ -1912,7 +1025,7 @@ function renderHOF() {
 }
 
 // =====================================
-// STATISTICS & PLAYER EDIT ENGINE
+// STATISTICS ENGINE
 // =====================================
 
 window.updatePlayerStat = async function(leagueKey, playerId, statField, value) {
@@ -1963,7 +1076,7 @@ function renderStats() {
         <tbody>
     `;
 
-    allPlayers.sort((a,b) => totalPoints(b) - totalPoints(a)).forEach(p => {
+    allPlayers.sort((a, b) => totalPoints(b) - totalPoints(a)).forEach(p => {
         const stats = p.stats || { s180: 0, highestCheckout: 0 };
         html += `
         <tr class="border-b border-gray-800 hover:bg-black/40">
@@ -1975,16 +1088,10 @@ function renderStats() {
             <td class="p-3 font-semibold text-yellow-400">${p.legsWon || 0}</td>
             <td class="p-3 font-black text-red-500">${totalPoints(p)}</td>
             <td class="p-3">
-                <input type="number" value="${stats.s180 || 0}" 
-                    onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 's180', this.value)"
-                    class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold"
-                    ${!window.isAdmin ? 'disabled' : ''}>
+                <input type="number" value="${stats.s180 || 0}" onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 's180', this.value)" class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold" ${!window.isAdmin ? 'disabled' : ''}>
             </td>
             <td class="p-3">
-                <input type="number" value="${stats.highestCheckout || 0}" 
-                    onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 'highestCheckout', this.value)"
-                    class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold"
-                    ${!window.isAdmin ? 'disabled' : ''}>
+                <input type="number" value="${stats.highestCheckout || 0}" onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 'highestCheckout', this.value)" class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold" ${!window.isAdmin ? 'disabled' : ''}>
             </td>
         </tr>`;
     });
@@ -1994,10 +1101,17 @@ function renderStats() {
     updateDashboard();
 }
 
+// =====================================
+// INITIALIZATION
+// =====================================
+
 window.addEventListener("load", () => {
-    setTimeout(() => {
+    setTimeout(()=>{
+        subscribeLeague(LEAGUE1_DOC);
+        subscribeLeague(LEAGUE2_DOC);
+        subscribeFixtures();
         subscribeHOF();
-    }, 2000);
+    }, 1200);
 });
 
 </script>
