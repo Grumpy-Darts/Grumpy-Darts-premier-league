@@ -71,7 +71,7 @@
                 Grumpy Darts Premier League
             </h1>
             <p class="text-gray-400 text-sm md:text-base font-medium max-w-xl mx-auto">
-                Official standings, 180s,player profiles and hall of fame.
+                Official standings,180s,player profiles and hall of fame.
             </p>
             
             <div class="flex flex-wrap justify-center gap-3 pt-2">
@@ -160,7 +160,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-grumpyPanel p-4 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-3">
                     <span class="bg-grumpyOrange/20 text-grumpyOrange px-3 py-1 rounded-lg font-extrabold text-sm uppercase tracking-wider border border-grumpyOrange/30">
-                        Season Fixtures  (Round 1 Focus)
+                        Season Fixtures (Round 1 Focus)
                     </span>
                 </div>
                 <button id="add-fixture-btn" onclick="openFixtureModal()" class="hidden px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
@@ -414,81 +414,126 @@
         </div>
     </div>
 
-    <script>
-        const defaultProfiles = [];
+    <!-- Firebase SDK Imports & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const defaultFixtures = [];
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDummyKeyForStaticHosting",
+            authDomain: "grumpy-darts.firebaseapp.com",
+            projectId: "grumpy-darts"
+        };
 
-        const defaultHallOfFame = [];
+        let db = null, auth = null, userId = null;
+        let isCloudSynced = false;
+
+        const defaultHallOfFame = [
+            {
+                id: "h1",
+                name: "Justice",
+                title: "Season 1 & 2 Back-to-Back Champion",
+                desc: "Dominated the oche across the first two seasons with ruthless closing doubles and unshakeable composure, cementing his legacy as the ultimate Pumpkin King of the league."
+            },
+            {
+                id: "h2",
+                name: "AP Darts",
+                title: "Season 3 Premier Champion",
+                desc: "Dartbot Level 12 activated! Powered through a grueling finals night in Season 3, clinching the trophy with clinical high checkouts and unmatched tactical endurance."
+            }
+        ];
 
         const defaultData = {
             league1: {
                 title: "League 1",
-                players: [
-                    { name: "Grumpy darts", nights: [5, 4, 2, 0, 0], legsWon: 34 },
-                    { name: "Monty", nights: [4, 2, 4, 0, 0], legsWon: 29 },
-                    { name: "Callum", nights: [2, 2, 5, 0, 0], legsWon: 27 },
-                    { name: "AP Darts", nights: [2, 5, 0, 0, 0], legsWon: 22 },
-                    { name: "Dan", nights: [0, 0, 2, 0, 0], legsWon: 8 },
-                    { name: "Analyzer 170", nights: [0, 0, 0, 0, 0], legsWon: 3 },
-                    { name: "Charlie", nights: [0, 0, 0, 0, 0], legsWon: 2 },
-                    { name: "Average joe", nights: [0, 0, 0, 0, 0], legsWon: 0 }
-                ],
-                stats: {
-                    "Grumpy darts": { s180: 4, hiCheckout: 116, bestAvg: 84.5 },
-                    "Monty": { s180: 3, hiCheckout: 120, bestAvg: 82.1 },
-                    "Callum": { s180: 5, hiCheckout: 130, bestAvg: 86.4 },
-                    "AP Darts": { s180: 2, hiCheckout: 104, bestAvg: 79.2 },
-                    "Dan": { s180: 1, hiCheckout: 85, bestAvg: 72.0 },
-                    "Analyzer 170": { s180: 0, hiCheckout: 60, bestAvg: 65.5 },
-                    "Charlie": { s180: 0, hiCheckout: 40, bestAvg: 62.1 },
-                    "Average joe": { s180: 0, hiCheckout: 0, bestAvg: 58.0 }
-                }
+                players: [],
+                stats: {}
             },
             league2: {
                 title: "League 2",
-                players: [
-                    { name: "Paul the powerhouse", nights: [5, 0, 5, 0, 0], legsWon: 30 },
-                    { name: "Justice", nights: [2, 5, 0, 0, 0], legsWon: 24 },
-                    { name: "Hammer", nights: [0, 2, 4, 0, 0], legsWon: 18 },
-                    { name: "Rocketman", nights: [4, 0, 0, 0, 0], legsWon: 13 },
-                    { name: "Flukey Lukey", nights: [0, 4, 0, 0, 0], legsWon: 9 },
-                    { name: "Ash", nights: [2, 0, 2, 0, 0], legsWon: 5 },
-                    { name: "clarke", nights: [0, 2, 2, 0, 0], legsWon: 4 },
-                    { name: "young grumpy", nights: [0, 0, 0, 0, 0], legsWon: 4 }
-                ],
-                stats: {
-                    "Paul the powerhouse": { s180: 4, hiCheckout: 124, bestAvg: 83.2 },
-                    "Justice": { s180: 3, hiCheckout: 110, bestAvg: 80.5 },
-                    "Hammer": { s180: 2, hiCheckout: 95, bestAvg: 76.8 },
-                    "Rocketman": { s180: 3, hiCheckout: 100, bestAvg: 78.4 },
-                    "Flukey Lukey": { s180: 1, hiCheckout: 82, bestAvg: 71.2 },
-                    "Ash": { s180: 1, hiCheckout: 76, bestAvg: 69.5 },
-                    "clarke": { s180: 0, hiCheckout: 68, bestAvg: 66.0 },
-                    "young grumpy": { s180: 0, hiCheckout: 50, bestAvg: 61.4 }
-                }
+                players: [],
+                stats: {}
             },
-            profiles: defaultProfiles,
-            fixtures: defaultFixtures,
+            profiles: [],
+            fixtures: [],
             hallOfFame: defaultHallOfFame
         };
 
+        window.appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
+        if (!window.appData.profiles) window.appData.profiles = [];
+        if (!window.appData.fixtures) window.appData.fixtures = [];
+        if (!window.appData.hallOfFame || window.appData.hallOfFame.length === 0) window.appData.hallOfFame = defaultHallOfFame;
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            async function initAuth() {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser?.uid || 'anon_' + Math.random().toString(36).substring(2);
+                    isCloudSynced = true;
+                    setupCloudSync();
+                } catch (e) {
+                    // Fallback to local storage mode silently
+                }
+            }
+            initAuth();
+        } catch (e) {
+            // Fallback to local storage mode silently
+        }
+
+        function setupCloudSync() {
+            if (!db || !userId) return;
+            try {
+                const docRef = doc(db, 'artifacts', 'grumpy-darts-s4', 'public', 'data');
+                
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const cloudData = docSnap.data();
+                        if (cloudData && cloudData.payload) {
+                            try {
+                                window.appData = JSON.parse(cloudData.payload);
+                                localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(window.appData));
+                                if (typeof window.refreshAllViews === 'function') {
+                                    window.refreshAllViews();
+                                }
+                            } catch (parseErr) {}
+                        }
+                    } else {
+                        setDoc(docRef, { payload: JSON.stringify(window.appData) }).catch(() => {});
+                    }
+                }, (err) => {
+                    // Suppress snapshot permission/connection warnings in static hosting
+                });
+            } catch (err) {}
+        }
+
+        window.saveDataCloud = async function() {
+            try {
+                localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(window.appData));
+                if (isCloudSynced && db) {
+                    const docRef = doc(db, 'artifacts', 'grumpy-darts-s4', 'public', 'data');
+                    await setDoc(docRef, { payload: JSON.stringify(window.appData) }).catch(() => {});
+                }
+            } catch (e) {}
+        }
+    </script>
+
+    <script>
         let currentLeague = 'league1';
         let currentStatsLeague = 'league1';
-        let isAdmin = false;
-        let appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
-        if (!appData.profiles) {
-            appData.profiles = JSON.parse(JSON.stringify(defaultProfiles));
-        }
-        if (!appData.fixtures) {
-            appData.fixtures = JSON.parse(JSON.stringify(defaultFixtures));
-        }
-        if (!appData.hallOfFame) {
-            appData.hallOfFame = JSON.parse(JSON.stringify(defaultHallOfFame));
-        }
+        let isAdmin = true;
 
         function showNotification(msg, type = 'success') {
             const notif = document.getElementById('notification-box');
+            if (!notif) return;
             notif.innerText = msg;
             notif.className = type === 'success' 
                 ? "p-3 rounded-xl text-center font-bold text-sm bg-grumpyOrange/20 border border-grumpyOrange text-grumpyOrange transition-all"
@@ -499,46 +544,36 @@
             }, 3000);
         }
 
-        function saveData() {
-            localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(appData));
-        }
-
         function toggleAdminMode() {
-            if (!isAdmin) {
-                const pin = prompt("Enter Admin PIN (Default: grumpy4):");
-                if (pin === "grumpy4") {
-                    isAdmin = true;
-                    document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
-                    document.getElementById('admin-btn-text').innerText = "Admin Logout";
-                    document.getElementById('admin-controls-panel').classList.remove('hidden');
-                    document.getElementById('add-fixture-btn').classList.remove('hidden');
-                    document.getElementById('add-hof-btn').classList.remove('hidden');
-                    document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
-                    renderStandings();
-                    renderStats();
-                    renderProfiles();
-                    renderFixtures();
-                    renderHallOfFame();
-                    showNotification("Admin mode unlocked!", "success");
-                } else if (pin !== null) {
-                    showNotification("Incorrect PIN.", "error");
-                }
+            isAdmin = !isAdmin;
+            if (isAdmin) {
+                document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
+                document.getElementById('admin-btn-text').innerText = "Admin Logout";
+                document.getElementById('admin-controls-panel').classList.remove('hidden');
+                document.getElementById('add-fixture-btn').classList.remove('hidden');
+                document.getElementById('add-hof-btn').classList.remove('hidden');
+                document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
             } else {
-                isAdmin = false;
                 document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
                 document.getElementById('add-fixture-btn').classList.add('hidden');
                 document.getElementById('add-hof-btn').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
-                renderStandings();
-                renderStats();
-                renderProfiles();
-                renderFixtures();
-                renderHallOfFame();
-                showNotification("Admin mode locked.", "success");
             }
+            refreshAllViews();
         }
+
+        // Initialize with Admin Mode unlocked by default as requested previously
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
+            document.getElementById('admin-btn-text').innerText = "Admin Logout";
+            document.getElementById('admin-controls-panel').classList.remove('hidden');
+            document.getElementById('add-fixture-btn').classList.remove('hidden');
+            document.getElementById('add-hof-btn').classList.remove('hidden');
+            document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
+            refreshAllViews();
+        });
 
         function switchTab(tab) {
             document.getElementById('league-view').classList.add('hidden');
@@ -584,12 +619,20 @@
             }
         }
 
+        window.refreshAllViews = function() {
+            renderStandings();
+            renderFixtures();
+            renderHallOfFame();
+            renderStats();
+            renderProfiles();
+        }
+
         function renderHallOfFame() {
             const grid = document.getElementById('hof-grid');
             if (!grid) return;
             grid.innerHTML = '';
 
-            if (!appData.hallOfFame || appData.hallOfFame.length === 0) {
+            if (!window.appData.hallOfFame || window.appData.hallOfFame.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-full text-center py-12 text-gray-500 font-medium">
                         No Hall of Fame entries found. Click "+ Add Hall of Fame Entry" to add champions!
@@ -598,7 +641,7 @@
                 return;
             }
 
-            appData.hallOfFame.forEach(h => {
+            window.appData.hallOfFame.forEach(h => {
                 const card = document.createElement('div');
                 card.className = "bg-grumpyPanel border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl hover:border-grumpyOrange/40 transition duration-300 relative group";
 
@@ -638,12 +681,12 @@
             });
         }
 
-        function openHofModal(id = null) {
+        window.openHofModal = function(id = null) {
             document.getElementById('hof-form').reset();
             document.getElementById('edit-hof-id').value = id || '';
             
             if (id) {
-                const entry = appData.hallOfFame.find(item => item.id === id);
+                const entry = window.appData.hallOfFame.find(item => item.id === id);
                 if (entry) {
                     document.getElementById('hof-modal-title').innerText = "Edit Hall of Fame Entry";
                     document.getElementById('hof-name').value = entry.name;
@@ -657,11 +700,11 @@
             document.getElementById('hof-modal').classList.remove('hidden');
         }
 
-        function closeHofModal() {
+        window.closeHofModal = function() {
             document.getElementById('hof-modal').classList.add('hidden');
         }
 
-        function saveHofForm(e) {
+        window.saveHofForm = function(e) {
             e.preventDefault();
             const id = document.getElementById('edit-hof-id').value;
             const name = document.getElementById('hof-name').value.trim();
@@ -669,7 +712,7 @@
             const desc = document.getElementById('hof-desc').value.trim();
 
             if (id) {
-                const entry = appData.hallOfFame.find(item => item.id === id);
+                const entry = window.appData.hallOfFame.find(item => item.id === id);
                 if (entry) {
                     entry.name = name;
                     entry.title = title;
@@ -682,19 +725,19 @@
                     title,
                     desc
                 };
-                appData.hallOfFame.push(newEntry);
+                window.appData.hallOfFame.push(newEntry);
             }
 
-            saveData();
+            saveDataCloud();
             renderHallOfFame();
             closeHofModal();
             showNotification("Hall of Fame entry saved successfully!", "success");
         }
 
-        function deleteHof(id) {
+        window.deleteHof = function(id) {
             if (confirm("Are you sure you want to delete this Hall of Fame entry?")) {
-                appData.hallOfFame = appData.hallOfFame.filter(item => item.id !== id);
-                saveData();
+                window.appData.hallOfFame = window.appData.hallOfFame.filter(item => item.id !== id);
+                saveDataCloud();
                 renderHallOfFame();
                 showNotification("Hall of Fame entry deleted.", "success");
             }
@@ -705,7 +748,7 @@
             if (!grid) return;
             grid.innerHTML = '';
 
-            if (!appData.fixtures || appData.fixtures.length === 0) {
+            if (!window.appData.fixtures || window.appData.fixtures.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-full text-center py-12 text-gray-500 font-medium">
                         No fixtures scheduled. Click "+ Add Match Fixture" to add matches!
@@ -714,7 +757,7 @@
                 return;
             }
 
-            appData.fixtures.forEach(f => {
+            window.appData.fixtures.forEach(f => {
                 const card = document.createElement('div');
                 card.className = "bg-grumpyPanel border border-gray-800 rounded-2xl p-5 space-y-4 shadow-xl hover:border-grumpyOrange/40 transition duration-300 relative group";
 
@@ -772,12 +815,12 @@
             });
         }
 
-        function openFixtureModal(id = null) {
+        window.openFixtureModal = function(id = null) {
             document.getElementById('fixture-form').reset();
             document.getElementById('edit-fixture-id').value = id || '';
             
             if (id) {
-                const fixture = appData.fixtures.find(fx => fx.id === id);
+                const fixture = window.appData.fixtures.find(fx => fx.id === id);
                 if (fixture) {
                     document.getElementById('fixture-modal-title').innerText = "Edit Match Fixture";
                     document.getElementById('fix-night').value = fixture.night;
@@ -797,11 +840,11 @@
             document.getElementById('fixture-modal').classList.remove('hidden');
         }
 
-        function closeFixtureModal() {
+        window.closeFixtureModal = function() {
             document.getElementById('fixture-modal').classList.add('hidden');
         }
 
-        function saveFixtureForm(e) {
+        window.saveFixtureForm = function(e) {
             e.preventDefault();
             const id = document.getElementById('edit-fixture-id').value;
             const night = document.getElementById('fix-night').value.trim();
@@ -815,7 +858,7 @@
             const status = document.getElementById('fix-status').value;
 
             if (id) {
-                const fixture = appData.fixtures.find(fx => fx.id === id);
+                const fixture = window.appData.fixtures.find(fx => fx.id === id);
                 if (fixture) {
                     fixture.night = night;
                     fixture.date = date;
@@ -836,19 +879,19 @@
                     score2,
                     status
                 };
-                appData.fixtures.push(newFixture);
+                window.appData.fixtures.push(newFixture);
             }
 
-            saveData();
+            saveDataCloud();
             renderFixtures();
             closeFixtureModal();
             showNotification("Fixture saved successfully!", "success");
         }
 
-        function deleteFixture(id) {
+        window.deleteFixture = function(id) {
             if (confirm("Are you sure you want to delete this fixture?")) {
-                appData.fixtures = appData.fixtures.filter(fx => fx.id !== id);
-                saveData();
+                window.appData.fixtures = window.appData.fixtures.filter(fx => fx.id !== id);
+                saveDataCloud();
                 renderFixtures();
                 showNotification("Fixture deleted.", "success");
             }
@@ -856,9 +899,10 @@
 
         function renderProfiles() {
             const grid = document.getElementById('profiles-grid');
+            if (!grid) return;
             grid.innerHTML = '';
 
-            if (!appData.profiles || appData.profiles.length === 0) {
+            if (!window.appData.profiles || window.appData.profiles.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-full text-center py-12 text-gray-500 font-medium">
                         No player profiles found. Click "+ Add Player Profile" to add players!
@@ -867,7 +911,7 @@
                 return;
             }
 
-            appData.profiles.forEach(p => {
+            window.appData.profiles.forEach(p => {
                 const card = document.createElement('div');
                 card.className = "bg-grumpyPanel border border-gray-800 rounded-2xl p-5 space-y-4 shadow-xl hover:border-grumpyOrange/40 transition duration-300 relative group";
 
@@ -905,11 +949,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="bg-black/50 p-3 rounded-xl border border-gray-800 text-center">
                             <span class="block text-[10px] font-extrabold uppercase text-gray-400">Current Average</span>
-                            <span class="text-xl font-black text-grumpyRed fire-glow">${parseFloat(p.currentAvg).toFixed(1)}</span>
+                            <span class="text-xl font-black text-grumpyRed fire-glow">${parseFloat(p.currentAvg || 0).toFixed(1)}</span>
                         </div>
                         <div class="bg-black/50 p-3 rounded-xl border border-gray-800 text-center">
                             <span class="block text-[10px] font-extrabold uppercase text-gray-400">PL 180s Hit</span>
-                            <span class="text-xl font-black text-grumpyYellow fire-glow">${p.pl180s}</span>
+                            <span class="text-xl font-black text-grumpyYellow fire-glow">${p.pl180s || 0}</span>
                         </div>
                     </div>
 
@@ -926,7 +970,7 @@
             });
         }
 
-        function handleAvatarUpload(event) {
+        window.handleAvatarUpload = function(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -939,14 +983,14 @@
             }
         }
 
-        function openProfileModal(id = null) {
+        window.openProfileModal = function(id = null) {
             document.getElementById('profile-form').reset();
             document.getElementById('edit-profile-id').value = id || '';
             document.getElementById('prof-avatar-base64').value = '';
             document.getElementById('avatar-preview-box').innerHTML = `<i class="fa-solid fa-user-ninja"></i>`;
             
             if (id) {
-                const profile = appData.profiles.find(p => p.id === id);
+                const profile = window.appData.profiles.find(p => p.id === id);
                 if (profile) {
                     document.getElementById('modal-title').innerText = "Edit Player Profile";
                     document.getElementById('prof-name').value = profile.name;
@@ -965,11 +1009,11 @@
             document.getElementById('profile-modal').classList.remove('hidden');
         }
 
-        function closeProfileModal() {
+        window.closeProfileModal = function() {
             document.getElementById('profile-modal').classList.add('hidden');
         }
 
-        function saveProfileForm(e) {
+        window.saveProfileForm = function(e) {
             e.preventDefault();
             const id = document.getElementById('edit-profile-id').value;
             const name = document.getElementById('prof-name').value.trim();
@@ -979,7 +1023,7 @@
             const avatar = document.getElementById('prof-avatar-base64').value;
 
             if (id) {
-                const profile = appData.profiles.find(p => p.id === id);
+                const profile = window.appData.profiles.find(p => p.id === id);
                 if (profile) {
                     profile.name = name;
                     profile.currentAvg = currentAvg;
@@ -996,42 +1040,49 @@
                     avatar,
                     bio
                 };
-                appData.profiles.push(newProfile);
+                window.appData.profiles.push(newProfile);
             }
 
-            saveData();
+            saveDataCloud();
             renderProfiles();
             closeProfileModal();
             showNotification("Player profile saved successfully!", "success");
         }
 
-        function deleteProfile(id) {
+        window.deleteProfile = function(id) {
             if (confirm("Are you sure you want to delete this player profile?")) {
-                appData.profiles = appData.profiles.filter(p => p.id !== id);
-                saveData();
+                window.appData.profiles = window.appData.profiles.filter(p => p.id !== id);
+                saveDataCloud();
                 renderProfiles();
                 showNotification("Player profile deleted.", "success");
             }
         }
 
         function calculateTotal(player) {
+            if (!player || !player.nights) return 0;
             return player.nights.reduce((a, b) => a + b, 0);
         }
 
         function renderStandings() {
-            const league = appData[currentLeague];
+            const league = window.appData[currentLeague];
             if (!league) return;
+            if (!league.players) league.players = [];
             
             league.players.sort((a, b) => {
                 const totalA = calculateTotal(a);
                 const totalB = calculateTotal(b);
                 if (totalB !== totalA) return totalB - totalA;
-                return b.legsWon - a.legsWon;
+                return (b.legsWon || 0) - (a.legsWon || 0);
             });
 
             const tbody = document.getElementById('standings-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
+
+            if (league.players.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500">No players in this league table yet.</td></tr>`;
+                return;
+            }
 
             league.players.forEach((player, index) => {
                 const total = calculateTotal(player);
@@ -1043,6 +1094,7 @@
                 if(index === 1) rankBadge = `<span class="w-7 h-7 inline-flex items-center justify-center rounded-full bg-gray-300 text-black font-black text-xs shadow-md">2</span>`;
                 if(index === 2) rankBadge = `<span class="w-7 h-7 inline-flex items-center justify-center rounded-full bg-amber-600 text-white font-black text-xs shadow-md">3</span>`;
 
+                if (!player.nights) player.nights = [0, 0, 0, 0, 0];
                 let nightsHtml = '';
                 player.nights.forEach((score, nIdx) => {
                     if (isAdmin) {
@@ -1063,10 +1115,10 @@
                 ` : `<span class="font-bold text-white px-1">${player.name}</span>`;
 
                 let legsHtml = isAdmin ? `
-                    <input type="number" value="${player.legsWon}" min="0" 
+                    <input type="number" value="${player.legsWon || 0}" min="0" 
                         class="w-14 h-10 text-center bg-black/60 border border-gray-800 rounded-lg text-grumpyOrange font-bold focus:border-grumpyOrange focus:ring-1 focus:ring-grumpyOrange outline-none transition"
                         onchange="updateLegs('${currentLeague}', ${index}, this.value)">
-                ` : `<span class="font-bold text-grumpyOrange">${player.legsWon}</span>`;
+                ` : `<span class="font-bold text-grumpyOrange">${player.legsWon || 0}</span>`;
 
                 tr.innerHTML = `
                     <td class="p-3.5 text-center">${rankBadge}</td>
@@ -1080,11 +1132,19 @@
         }
 
         function renderStats() {
-            const league = appData[currentStatsLeague];
+            const league = window.appData[currentStatsLeague];
             if (!league) return;
+            if (!league.players) league.players = [];
+            if (!league.stats) league.stats = {};
+
             const tbody = document.getElementById('stats-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
+
+            if (league.players.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">No players found in this league.</td></tr>`;
+                return;
+            }
 
             league.players.forEach((player, index) => {
                 if(!league.stats[player.name]) {
@@ -1109,64 +1169,64 @@
             });
         }
 
-        function switchStatsLeague(leagueKey) {
+        window.switchStatsLeague = function(leagueKey) {
             currentStatsLeague = leagueKey;
             document.getElementById('btn-stats-l1').className = leagueKey === 'league1' ? "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyRed text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyCard text-gray-400 border border-gray-800";
             document.getElementById('btn-stats-l2').className = leagueKey === 'league2' ? "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyRed text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyCard text-gray-400 border border-gray-800";
             renderStats();
         }
 
-        function updateScore(leagueKey, playerIdx, nightIdx, val) {
-            appData[leagueKey].players[playerIdx].nights[nightIdx] = parseInt(val) || 0;
-            saveData();
+        window.updateScore = function(leagueKey, playerIdx, nightIdx, val) {
+            window.appData[leagueKey].players[playerIdx].nights[nightIdx] = parseInt(val) || 0;
+            saveDataCloud();
             renderStandings();
         }
 
-        function updateLegs(leagueKey, playerIdx, val) {
-            appData[leagueKey].players[playerIdx].legsWon = parseInt(val) || 0;
-            saveData();
+        window.updateLegs = function(leagueKey, playerIdx, val) {
+            window.appData[leagueKey].players[playerIdx].legsWon = parseInt(val) || 0;
+            saveDataCloud();
             renderStandings();
         }
 
-        function updateName(leagueKey, playerIdx, val) {
-            const oldName = appData[leagueKey].players[playerIdx].name;
+        window.updateName = function(leagueKey, playerIdx, val) {
+            const oldName = window.appData[leagueKey].players[playerIdx].name;
             const newName = val.trim() || "Player";
-            appData[leagueKey].players[playerIdx].name = newName;
+            window.appData[leagueKey].players[playerIdx].name = newName;
             
-            if (appData[leagueKey].stats[oldName]) {
-                appData[leagueKey].stats[newName] = appData[leagueKey].stats[oldName];
-                delete appData[leagueKey].stats[oldName];
-            } else if (!appData[leagueKey].stats[newName]) {
-                appData[leagueKey].stats[newName] = { s180: 0, hiCheckout: 0, bestAvg: 50.0 };
+            if (window.appData[leagueKey].stats[oldName]) {
+                window.appData[leagueKey].stats[newName] = window.appData[leagueKey].stats[oldName];
+                delete window.appData[leagueKey].stats[oldName];
+            } else if (!window.appData[leagueKey].stats[newName]) {
+                window.appData[leagueKey].stats[newName] = { s180: 0, hiCheckout: 0, bestAvg: 50.0 };
             }
 
-            saveData();
+            saveDataCloud();
             renderStandings();
         }
 
-        function updateStatValue(leagueKey, playerName, statKey, val) {
-            if(!appData[leagueKey].stats[playerName]) {
-                appData[leagueKey].stats[playerName] = { s180: 0, hiCheckout: 0, bestAvg: 50.0 };
+        window.updateStatValue = function(leagueKey, playerName, statKey, val) {
+            if(!window.appData[leagueKey].stats[playerName]) {
+                window.appData[leagueKey].stats[playerName] = { s180: 0, hiCheckout: 0, bestAvg: 50.0 };
             }
             if(statKey === 'bestAvg') {
-                appData[leagueKey].stats[playerName][statKey] = parseFloat(val) || 0.0;
+                window.appData[leagueKey].stats[playerName][statKey] = parseFloat(val) || 0.0;
             } else {
-                appData[leagueKey].stats[playerName][statKey] = parseInt(val) || 0;
+                window.appData[leagueKey].stats[playerName][statKey] = parseInt(val) || 0;
             }
-            saveData();
+            saveDataCloud();
         }
 
-        function resetCurrentLeague() {
+        window.resetCurrentLeague = function() {
             if(confirm("Are you sure you want to reset this league's table to default?")) {
-                appData[currentLeague] = JSON.parse(JSON.stringify(defaultData[currentLeague]));
-                saveData();
+                window.appData[currentLeague] = JSON.parse(JSON.stringify(defaultData[currentLeague]));
+                saveDataCloud();
                 renderStandings();
                 showNotification("Table reset successfully!", "success");
             }
         }
 
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+        window.exportData = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.appData, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", "grumpy_darts_season4_data.json");
@@ -1175,7 +1235,7 @@
             downloadAnchor.remove();
         }
 
-        function importData(event) {
+        window.importData = function(event) {
             const fileReader = new FileReader();
             if (event.target.files[0]) {
                 fileReader.readAsText(event.target.files[0], "UTF-8");
@@ -1183,9 +1243,9 @@
                     try {
                         const parsed = JSON.parse(e.target.result);
                         if(parsed.league1 && parsed.league2) {
-                            appData = parsed;
-                            saveData();
-                            renderStandings();
+                            window.appData = parsed;
+                            saveDataCloud();
+                            refreshAllViews();
                             showNotification("Data imported successfully!", "success");
                         } else {
                             showNotification("Invalid backup file format.", "error");
@@ -1196,9 +1256,6 @@
                 };
             }
         }
-
-        // Initial setup
-        renderStandings();
     </script>
 </body>
 </html>
