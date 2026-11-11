@@ -1943,17 +1943,70 @@ function renderHOF() {
     container.innerHTML = html;
 }
 
+<script>
 // =====================================
-// STATISTICS ENGINE
+// UPDATED STATISTICS & DASHBOARD ENGINE
 // =====================================
 
+// Update individual player stats (180s or Checkout)
+window.updatePlayerStat = async function(leagueKey, playerId, statField, value) {
+    if (!window.isAdmin) return;
+    const league = window.appData[leagueKey];
+    const player = league.players.find(p => p.id === playerId);
+    if (!player) return;
+
+    if (!player.stats) {
+        player.stats = { s180: 0, highestCheckout: 0 };
+    }
+
+    player.stats[statField] = parseInt(value) || 0;
+    await saveLeague(leagueKey);
+    renderStats();
+}
+
+// Enhanced Dashboard Update
+function updateDashboard(){
+    const allPlayers = [
+        ...window.appData.league1.players.map(p => ({...p, leagueKey: 'league1'})),
+        ...window.appData.league2.players.map(p => ({...p, leagueKey: 'league2'}))
+    ];
+
+    if(allPlayers.length === 0) {
+        document.getElementById("leaderCard").innerHTML = "--";
+        document.getElementById("most180sCard").innerHTML = "--";
+        document.getElementById("checkoutCard").innerHTML = "--";
+        return;
+    }
+
+    // 1. League Leader (by points)
+    const leader = [...allPlayers].sort((a,b) => totalPoints(b) - totalPoints(a))[0];
+    document.getElementById("leaderCard").innerHTML = leader ? leader.name : "--";
+
+    // 2. Most 180s Leader
+    const top180 = [...allPlayers].sort((a,b) => (b.stats?.s180 || 0) - (a.stats?.s180 || 0))[0];
+    if (top180 && (top180.stats?.s180 || 0) > 0) {
+        document.getElementById("most180sCard").innerHTML = `${top180.name} (${top180.stats.s180})`;
+    } else {
+        document.getElementById("most180sCard").innerHTML = "0";
+    }
+
+    // 3. Highest Checkout Leader
+    const topCheckout = [...allPlayers].sort((a,b) => (b.stats?.highestCheckout || 0) - (a.stats?.highestCheckout || 0))[0];
+    if (topCheckout && (topCheckout.stats?.highestCheckout || 0) > 0) {
+        document.getElementById("checkoutCard").innerHTML = `${topCheckout.name} (${topCheckout.stats.highestCheckout})`;
+    } else {
+        document.getElementById("checkoutCard").innerHTML = "0";
+    }
+}
+
+// Render Statistics View with Admin Edit Inputs
 function renderStats() {
     const container = document.getElementById("statsContainer");
     if(!container) return;
 
     const allPlayers = [
-        ...window.appData.league1.players,
-        ...window.appData.league2.players
+        ...window.appData.league1.players.map(p => ({...p, leagueKey: 'league1'})),
+        ...window.appData.league2.players.map(p => ({...p, leagueKey: 'league2'}))
     ];
 
     if(allPlayers.length === 0) {
@@ -1967,36 +2020,47 @@ function renderStats() {
         <thead>
             <tr class="border-b border-orange-500 text-orange-400">
                 <th class="p-3">Player</th>
+                <th class="p-3">League</th>
                 <th class="p-3">Legs Won</th>
                 <th class="p-3">Total Points</th>
+                <th class="p-3">180s Hit</th>
+                <th class="p-3">Highest Checkout</th>
             </tr>
         </thead>
         <tbody>
     `;
 
-    allPlayers.sort((a,b) => b.legsWon - a.legsWon).forEach(p => {
+    allPlayers.sort((a,b) => totalPoints(b) - totalPoints(a)).forEach(p => {
+        const stats = p.stats || { s180: 0, highestCheckout: 0 };
         html += `
         <tr class="border-b border-gray-800 hover:bg-black/40">
             <td class="p-3 font-bold flex items-center gap-2">
                 ${p.avatar ? `<img src="${p.avatar}" class="w-6 h-6 rounded-full object-cover">` : ''}
                 ${p.name}
             </td>
+            <td class="p-3 text-xs uppercase text-gray-400 font-semibold">${p.leagueKey === 'league1' ? 'League 1' : 'League 2'}</td>
             <td class="p-3 font-semibold text-yellow-400">${p.legsWon}</td>
             <td class="p-3 font-black text-red-500">${totalPoints(p)}</td>
+            <td class="p-3">
+                <input type="number" value="${stats.s180}" 
+                    onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 's180', this.value)"
+                    class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold"
+                    ${!window.isAdmin ? 'disabled' : ''}>
+            </td>
+            <td class="p-3">
+                <input type="number" value="${stats.highestCheckout}" 
+                    onchange="updatePlayerStat('${p.leagueKey}', '${p.id}', 'highestCheckout', this.value)"
+                    class="w-16 bg-black border border-gray-700 rounded p-1 text-center text-white font-bold"
+                    ${!window.isAdmin ? 'disabled' : ''}>
+            </td>
         </tr>`;
     });
 
     html += `</tbody></table></div>`;
     container.innerHTML = html;
+    updateDashboard();
 }
-
-window.addEventListener("load", () => {
-    setTimeout(() => {
-        subscribeHOF();
-    }, 2000);
-});
-
 </script>
-
+    
 </body>
 </html>
