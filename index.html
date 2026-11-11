@@ -652,7 +652,7 @@ function renderLeague(leagueKey){
     players.forEach((player, index)=>{
         const nights = player.nights || [0, 0, 0, 0, 0];
         
-        // Top 4 vs Bottom 4 styling rules
+        // Top 4 vs Bottom 4 definitions
         const isTopFour = index < 4;
         const rowHighlight = isTopFour 
             ? "bg-orange-950/20" 
@@ -663,11 +663,14 @@ function renderLeague(leagueKey){
 
         html += `
         <tr class="${rowHighlight} ${bottomDivider}">
-        <td class="p-2 font-black ${isTopFour ? 'text-orange-400' : ''}">${index + 1}</td>
+        <td class="p-2 font-black ${isTopFour ? 'text-orange-400' : 'text-gray-400'}">${index + 1}</td>
         <td class="p-2 font-bold flex items-center gap-2">
             ${player.avatar ? `<img src="${player.avatar}" class="w-7 h-7 rounded-full object-cover">` : ''}
             ${player.name}
-            ${isTopFour ? '<span class="text-[10px] bg-orange-600/30 text-orange-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Top 4</span>' : ''}
+            ${isTopFour 
+                ? '<span class="text-[10px] bg-orange-600/30 text-orange-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Top 4</span>' 
+                : '<span class="text-[10px] bg-red-950/40 text-red-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Wooden Spoon</span>'
+            }
         </td>
         ${nights.map((score, night)=>`
             <td class="p-2">
