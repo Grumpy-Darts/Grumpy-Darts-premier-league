@@ -452,8 +452,32 @@ function switchView(view, evt){
     
     if(evt && evt.currentTarget) {
         evt.currentTarget.classList.add('nav-active', 'bg-grumpyRed');
-    } else {
-        event.target.classList.add('nav-active', 'bg-grumpyRed');
+    } else if (window.event && window.event.target) {
+        window.event.target.classList.add('nav-active', 'bg-grumpyRed');
+    }
+
+    // Dynamic League Leader update based on active tab
+    const leaderCard = document.getElementById("leaderCard");
+    if(leaderCard) {
+        if(view === 'league1') {
+            const l1Players = (window.appData.league1 && window.appData.league1.players) || [];
+            if(l1Players.length > 0) {
+                const topL1 = [...l1Players].sort((a, b) => totalPoints(b) - totalPoints(a))[0];
+                leaderCard.innerHTML = topL1 ? `${topL1.name} (L1)` : "--";
+            } else {
+                leaderCard.innerHTML = "--";
+            }
+        } else if(view === 'league2') {
+            const l2Players = (window.appData.league2 && window.appData.league2.players) || [];
+            if(l2Players.length > 0) {
+                const topL2 = [...l2Players].sort((a, b) => totalPoints(b) - totalPoints(a))[0];
+                leaderCard.innerHTML = topL2 ? `${topL2.name} (L2)` : "--";
+            } else {
+                leaderCard.innerHTML = "--";
+            }
+        } else {
+            if(typeof updateDashboard === 'function') updateDashboard();
+        }
     }
 }
 
