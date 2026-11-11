@@ -57,8 +57,8 @@
             
             <!-- Admin Toggle Button -->
             <div class="absolute top-4 right-4">
-                <button onclick="toggleAdminMode()" id="admin-toggle-btn" class="px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800">
-                    <i class="fa-solid fa-lock mr-1"></i> <span id="admin-btn-text">Admin Login</span>
+                <button onclick="toggleAdminMode()" id="admin-toggle-btn" class="px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange">
+                    <i class="fa-solid fa-lock-open mr-1"></i> <span id="admin-btn-text">Admin Unlocked</span>
                 </button>
             </div>
 
@@ -71,7 +71,7 @@
                 Grumpy Darts Premier League
             </h1>
             <p class="text-gray-400 text-sm md:text-base font-medium max-w-xl mx-auto">
-                Official standings, match scores, 180s, and high checkouts manager.
+                Official standings, match scores, 180s, and player profiles.
             </p>
             
             <div class="flex flex-wrap justify-center gap-3 pt-2">
@@ -97,9 +97,9 @@
         <div id="notification-box" class="hidden p-4 rounded-xl text-center font-bold text-sm transition-all border"></div>
 
         <!-- Admin Controls Panel (Hidden by default) -->
-        <div id="admin-controls-panel" class="hidden flex flex-col md:flex-row justify-between items-center gap-4 bg-grumpyRed/10 p-4 rounded-xl border border-grumpyRed/30">
+        <div id="admin-controls-panel" class="flex flex-col md:flex-row justify-between items-center gap-4 bg-grumpyRed/10 p-4 rounded-xl border border-grumpyRed/30">
             <div class="flex items-center gap-2 text-grumpyOrange text-xs font-bold">
-                <i class="fa-solid fa-triangle-exclamation"></i> ADMIN MODE ACTIVE: You can edit player names, scores, and stats directly in the tables below.
+                <i class="fa-solid fa-triangle-exclamation"></i> ADMIN MODE ACTIVE: You can edit player names, scores, stats, and fixtures directly.
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <button onclick="resetCurrentLeague()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold rounded-lg transition border border-gray-700">
@@ -157,10 +157,10 @@
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-grumpyPanel p-4 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-3">
                     <span class="bg-grumpyOrange/20 text-grumpyOrange px-3 py-1 rounded-lg font-extrabold text-sm uppercase tracking-wider border border-grumpyOrange/30">
-                        Season Fixtures  (Round 1 Focus)
+                        Season Fixtures (Round 1 Focus)
                     </span>
                 </div>
-                <button id="add-fixture-btn" onclick="openFixtureModal()" class="hidden px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
+                <button id="add-fixture-btn" onclick="openFixtureModal()" class="px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
                     <i class="fa-solid fa-calendar-plus mr-1.5"></i> Add Match Fixture
                 </button>
             </div>
@@ -475,7 +475,7 @@
 
         let currentLeague = 'league1';
         let currentStatsLeague = 'league1';
-        let isAdmin = false;
+        let isAdmin = true; // Default to true so tools are immediately available
         let appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
         if (!appData.profiles) {
             appData.profiles = JSON.parse(JSON.stringify(defaultProfiles));
@@ -501,36 +501,26 @@
         }
 
         function toggleAdminMode() {
-            if (!isAdmin) {
-                const pin = prompt("Enter Admin PIN (Default: grumpy4):");
-                if (pin === "grumpy4") {
-                    isAdmin = true;
-                    document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
-                    document.getElementById('admin-btn-text').innerText = "Admin Logout";
-                    document.getElementById('admin-controls-panel').classList.remove('hidden');
-                    document.getElementById('add-fixture-btn').classList.remove('hidden');
-                    document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
-                    renderStandings();
-                    renderStats();
-                    renderProfiles();
-                    renderFixtures();
-                    showNotification("Admin mode unlocked!", "success");
-                } else if (pin !== null) {
-                    showNotification("Incorrect PIN.", "error");
-                }
+            isAdmin = !isAdmin;
+            if (isAdmin) {
+                document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
+                document.getElementById('admin-btn-text').innerText = "Admin Unlocked";
+                document.getElementById('admin-controls-panel').classList.remove('hidden');
+                document.getElementById('add-fixture-btn').classList.remove('hidden');
+                document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
+                showNotification("Admin mode unlocked!", "success");
             } else {
-                isAdmin = false;
                 document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
                 document.getElementById('add-fixture-btn').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
-                renderStandings();
-                renderStats();
-                renderProfiles();
-                renderFixtures();
                 showNotification("Admin mode locked.", "success");
             }
+            renderStandings();
+            renderStats();
+            renderProfiles();
+            renderFixtures();
         }
 
         function switchTab(tab) {
@@ -1040,6 +1030,8 @@
 
         // Initial setup
         renderStandings();
+        renderFixtures();
+        renderProfiles();
     </script>
 </body>
 </html>
