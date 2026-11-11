@@ -52,7 +52,7 @@
         <!-- Header -->
         <header class="text-center space-y-3 relative py-6 bg-grumpyPanel rounded-2xl fire-border px-4">
             <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-grumpyRed text-white px-6 py-1 rounded-full text-xs font-black uppercase tracking-widest fire-glow border border-grumpyOrange">
-                Seasons Live Hub
+                Season 4 Live Hub
             </div>
             
             <!-- Admin Toggle Button -->
@@ -62,18 +62,16 @@
                 </button>
             </div>
 
-            <!-- Custom Logo / Badge Header -->
+            <!-- Logo Image -->
             <div class="pt-3 flex justify-center">
-                <div class="w-28 h-28 md:w-36 md:h-36 bg-gradient-to-br from-grumpyRed to-grumpyOrange rounded-2xl fire-border flex items-center justify-center text-5xl font-black text-black shadow-lg hover:scale-105 transition-transform duration-300">
-                    🎯
-                </div>
+                <img src="logo.png" alt="Grumpy Darts Logo" class="w-28 h-28 md:w-36 md:h-36 object-contain rounded-2xl fire-border shadow-lg">
             </div>
 
             <h1 class="text-4xl md:text-6xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-grumpyYellow via-grumpyOrange to-grumpyRed fire-glow pt-2">
                 Grumpy Darts Premier League
             </h1>
             <p class="text-gray-400 text-sm md:text-base font-medium max-w-xl mx-auto">
-                Official standings, match scores, 180s, and player profiles.
+                Official standings, match scores, 180s, and high checkouts manager.
             </p>
             
             <div class="flex flex-wrap justify-center gap-3 pt-2">
@@ -82,6 +80,9 @@
                 </button>
                 <button onclick="switchTab('league2')" id="btn-league2" class="px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800">
                     <i class="fa-solid fa-medal mr-2"></i> League 2
+                </button>
+                <button onclick="switchTab('fixtures')" id="btn-fixtures" class="px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800">
+                    <i class="fa-solid fa-calendar-days mr-2"></i> Fixtures
                 </button>
                 <button onclick="switchTab('stats')" id="btn-stats" class="px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800">
                     <i class="fa-solid fa-chart-simple mr-2"></i> Performance Stats
@@ -148,6 +149,24 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- Fixtures & Schedule View -->
+        <div id="fixtures-view" class="space-y-6 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-grumpyPanel p-4 rounded-xl border border-gray-800">
+                <div class="flex items-center gap-3">
+                    <span class="bg-grumpyOrange/20 text-grumpyOrange px-3 py-1 rounded-lg font-extrabold text-sm uppercase tracking-wider border border-grumpyOrange/30">
+                        Season Fixtures  (Round 1 Focus)
+                    </span>
+                </div>
+                <button id="add-fixture-btn" onclick="openFixtureModal()" class="hidden px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
+                    <i class="fa-solid fa-calendar-plus mr-1.5"></i> Add Match Fixture
+                </button>
+            </div>
+
+            <div id="fixtures-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Populated by JS -->
             </div>
         </div>
 
@@ -252,35 +271,154 @@
         </div>
     </div>
 
+    <!-- Modal for Adding/Editing Fixtures -->
+    <div id="fixture-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-grumpyPanel rounded-2xl fire-border max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 id="fixture-modal-title" class="text-xl font-black text-grumpyYellow uppercase tracking-wider">
+                    Add Match Fixture
+                </h3>
+                <button onclick="closeFixtureModal()" class="text-gray-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="fixture-form" onsubmit="saveFixtureForm(event)" class="space-y-4">
+                <input type="hidden" id="edit-fixture-id">
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Night / Round</label>
+                        <input type="text" id="fix-night" required placeholder="e.g. Night 4" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Date & Time</label>
+                        <input type="text" id="fix-date" required placeholder="e.g. Sunday 8:00 PM" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Player 1 (Home)</label>
+                        <input type="text" id="fix-p1" required placeholder="e.g. Grumpy Darts" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Player 2 (Away)</label>
+                        <input type="text" id="fix-p2" required placeholder="e.g. Monty" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">P1 Score (Optional)</label>
+                        <input type="number" id="fix-s1" min="0" placeholder="-" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">P2 Score (Optional)</label>
+                        <input type="number" id="fix-s2" min="0" placeholder="-" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Match Status</label>
+                    <select id="fix-status" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Live">🔴 Live Stream</option>
+                        <option value="Completed">✅ Completed</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeFixtureModal()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs uppercase rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-black text-xs uppercase rounded-xl fire-glow shadow-lg transition">
+                        Save Fixture
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const defaultProfiles = [
             {
                 id: "p1",
-                name: "Grumpy darts",
-                currentAvg: 84.5,
+                name: "AP Darts",
+                currentAvg: 79.2,
                 pl180s: 14,
-                bio: "Founding member of the league. Known for relentless power scoring and a fiery stage presence under pressure."
+                bio: "The seasoned OG of the Grumpy Darts Premier League, slinging arrows and surviving every format change since Season 1. Scientifically classified as Dartbot Level 12: relentless, unblinking, and powered entirely by instant coffee and sheer stubbornness. When AP steps up to the oche, you aren't just playing a match—you're playing a boss battle."
             },
             {
                 id: "p2",
+                name: "Justice",
+                currentAvg: 80.5,
+                pl180s: 12,
+                bio: "The back-to-back, reigning heavyweight champion of Seasons 1 and 2. Don't let the moniker fool you—his name has absolutely nothing to do with the law, courts, or righteous verdicts; it's literally just a name he woke up with. While he doesn't dispense legal advice, he does dispense brutal 140s and ruthless closing doubles that leave opponents crying for a mistrial."
+            },
+            {
+                id: "p3",
                 name: "Monty",
                 currentAvg: 82.1,
                 pl180s: 9,
                 bio: "Precision double hitter. Always calm under pressure and a heavy favorite in night finals."
             },
             {
-                id: "p3",
+                id: "p4",
                 name: "Callum",
                 currentAvg: 86.4,
                 pl180s: 18,
                 bio: "High-scoring power house with the highest maximum count this season. Bullseye specialist."
             },
             {
-                id: "p4",
+                id: "p5",
                 name: "Paul the powerhouse",
                 currentAvg: 83.2,
                 pl180s: 11,
                 bio: "League 2 powerhouse climbing rapidly. Master of clutch 100+ checkouts when it matters most."
+            }
+        ];
+
+        const defaultFixtures = [
+            {
+                id: "f1",
+                night: "Night 1 - Match 1",
+                date: "Sunday 7:30 PM",
+                p1: "Grumpy darts",
+                p2: "Monty",
+                score1: null,
+                score2: null,
+                status: "Upcoming"
+            },
+            {
+                id: "f2",
+                night: "Night 1 - Match 2",
+                date: "Sunday 8:00 PM",
+                p1: "Callum",
+                p2: "AP Darts",
+                score1: null,
+                score2: null,
+                status: "Upcoming"
+            },
+            {
+                id: "f3",
+                night: "Night 1 - Match 3",
+                date: "Sunday 8:30 PM",
+                p1: "Dan",
+                p2: "Analyzer 170",
+                score1: null,
+                score2: null,
+                status: "Upcoming"
+            },
+            {
+                id: "f4",
+                night: "Night 1 - Match 4",
+                date: "Sunday 9:00 PM",
+                p1: "Charlie",
+                p2: "Average joe",
+                score1: null,
+                score2: null,
+                status: "Upcoming"
             }
         ];
 
@@ -331,7 +469,8 @@
                     "young grumpy": { s180: 0, hiCheckout: 50, bestAvg: 61.4 }
                 }
             },
-            profiles: defaultProfiles
+            profiles: defaultProfiles,
+            fixtures: defaultFixtures
         };
 
         let currentLeague = 'league1';
@@ -340,6 +479,9 @@
         let appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
         if (!appData.profiles) {
             appData.profiles = JSON.parse(JSON.stringify(defaultProfiles));
+        }
+        if (!appData.fixtures) {
+            appData.fixtures = JSON.parse(JSON.stringify(defaultFixtures));
         }
 
         function showNotification(msg, type = 'success') {
@@ -366,10 +508,12 @@
                     document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
                     document.getElementById('admin-btn-text').innerText = "Admin Logout";
                     document.getElementById('admin-controls-panel').classList.remove('hidden');
+                    document.getElementById('add-fixture-btn').classList.remove('hidden');
                     document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
                     renderStandings();
                     renderStats();
                     renderProfiles();
+                    renderFixtures();
                     showNotification("Admin mode unlocked!", "success");
                 } else if (pin !== null) {
                     showNotification("Incorrect PIN.", "error");
@@ -379,20 +523,24 @@
                 document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
+                document.getElementById('add-fixture-btn').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
                 renderStandings();
                 renderStats();
                 renderProfiles();
+                renderFixtures();
                 showNotification("Admin mode locked.", "success");
             }
         }
 
         function switchTab(tab) {
             document.getElementById('league-view').classList.add('hidden');
+            document.getElementById('fixtures-view').classList.add('hidden');
             document.getElementById('stats-view').classList.add('hidden');
             document.getElementById('profiles-view').classList.add('hidden');
             document.getElementById('btn-league1').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-league2').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
+            document.getElementById('btn-fixtures').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-stats').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-profiles').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
 
@@ -408,6 +556,10 @@
                 document.getElementById('btn-league2').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
                 document.getElementById('league-title-badge').innerText = "League 2 Standings";
                 renderStandings();
+            } else if(tab === 'fixtures') {
+                document.getElementById('fixtures-view').classList.remove('hidden');
+                document.getElementById('btn-fixtures').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
+                renderFixtures();
             } else if(tab === 'stats') {
                 document.getElementById('stats-view').classList.remove('hidden');
                 document.getElementById('btn-stats').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
@@ -416,6 +568,160 @@
                 document.getElementById('profiles-view').classList.remove('hidden');
                 document.getElementById('btn-profiles').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
                 renderProfiles();
+            }
+        }
+
+        function renderFixtures() {
+            const grid = document.getElementById('fixtures-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            if (!appData.fixtures || appData.fixtures.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-500 font-medium">
+                        No fixtures scheduled. Click "+ Add Match Fixture" to add matches!
+                    </div>
+                `;
+                return;
+            }
+
+            appData.fixtures.forEach(f => {
+                const card = document.createElement('div');
+                card.className = "bg-grumpyPanel border border-gray-800 rounded-2xl p-5 space-y-4 shadow-xl hover:border-grumpyOrange/40 transition duration-300 relative group";
+
+                let statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gray-800 text-gray-300 border border-gray-700">${f.status}</span>`;
+                if(f.status === 'Live') statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-grumpyRed text-white fire-glow border border-grumpyOrange animate-pulse"><i class="fa-solid fa-circle text-[8px] mr-1"></i> LIVE STREAM</span>`;
+                if(f.status === 'Completed') statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-900/40 text-green-400 border border-green-800">Completed</span>`;
+
+                let adminActions = isAdmin ? `
+                    <div class="absolute top-4 right-4 flex items-center gap-1 bg-black/70 p-1.5 rounded-lg border border-gray-800">
+                        <button onclick="openFixtureModal('${f.id}')" class="w-7 h-7 text-xs bg-grumpyOrange/20 text-grumpyOrange hover:bg-grumpyOrange hover:text-black rounded font-bold transition flex items-center justify-center">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="deleteFixture('${f.id}')" class="w-7 h-7 text-xs bg-grumpyRed/20 text-grumpyRed hover:bg-grumpyRed hover:text-white rounded font-bold transition flex items-center justify-center">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                ` : '';
+
+                let scoreDisplay = (f.score1 !== null && f.score2 !== null) ? `
+                    <div class="text-2xl font-black text-grumpyYellow fire-glow px-3 py-1 bg-black/60 rounded-xl border border-gray-800">
+                        ${f.score1} - ${f.score2}
+                    </div>
+                ` : `
+                    <div class="text-xs font-black text-gray-500 uppercase tracking-widest px-3 py-1.5 bg-black/40 rounded-xl border border-gray-800">
+                        VS
+                    </div>
+                `;
+
+                card.innerHTML = `
+                    ${adminActions}
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                        <span class="text-xs font-extrabold uppercase text-grumpyOrange"><i class="fa-solid fa-calendar mr-1"></i> ${f.night}</span>
+                        ${statusBadge}
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 py-2">
+                        <div class="flex-1 text-center bg-black/40 p-3 rounded-xl border border-gray-800/80">
+                            <span class="text-xs text-gray-400 block mb-1 font-bold">Home</span>
+                            <span class="font-extrabold text-sm text-white">${f.p1}</span>
+                        </div>
+                        
+                        ${scoreDisplay}
+
+                        <div class="flex-1 text-center bg-black/40 p-3 rounded-xl border border-gray-800/80">
+                            <span class="text-xs text-gray-400 block mb-1 font-bold">Away</span>
+                            <span class="font-extrabold text-sm text-white">${f.p2}</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center text-xs text-gray-400 font-medium pt-1">
+                        <i class="fa-solid fa-clock text-grumpyYellow mr-1"></i> ${f.date}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openFixtureModal(id = null) {
+            document.getElementById('fixture-form').reset();
+            document.getElementById('edit-fixture-id').value = id || '';
+            
+            if (id) {
+                const fixture = appData.fixtures.find(fx => fx.id === id);
+                if (fixture) {
+                    document.getElementById('fixture-modal-title').innerText = "Edit Match Fixture";
+                    document.getElementById('fix-night').value = fixture.night;
+                    document.getElementById('fix-date').value = fixture.date;
+                    document.getElementById('fix-p1').value = fixture.p1;
+                    document.getElementById('fix-p2').value = fixture.p2;
+                    document.getElementById('fix-s1').value = fixture.score1 !== null ? fixture.score1 : '';
+                    document.getElementById('fix-s2').value = fixture.score2 !== null ? fixture.score2 : '';
+                    document.getElementById('fix-status').value = fixture.status;
+                }
+            } else {
+                document.getElementById('fixture-modal-title').innerText = "Add Match Fixture";
+                document.getElementById('fix-night').value = "Night 1 - Match ";
+                document.getElementById('fix-date').value = "Sunday 8:00 PM";
+            }
+            
+            document.getElementById('fixture-modal').classList.remove('hidden');
+        }
+
+        function closeFixtureModal() {
+            document.getElementById('fixture-modal').classList.add('hidden');
+        }
+
+        function saveFixtureForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-fixture-id').value;
+            const night = document.getElementById('fix-night').value.trim();
+            const date = document.getElementById('fix-date').value.trim();
+            const p1 = document.getElementById('fix-p1').value.trim();
+            const p2 = document.getElementById('fix-p2').value.trim();
+            const s1Input = document.getElementById('fix-s1').value;
+            const s2Input = document.getElementById('fix-s2').value;
+            const score1 = s1Input !== '' ? parseInt(s1Input) : null;
+            const score2 = s2Input !== '' ? parseInt(s2Input) : null;
+            const status = document.getElementById('fix-status').value;
+
+            if (id) {
+                const fixture = appData.fixtures.find(fx => fx.id === id);
+                if (fixture) {
+                    fixture.night = night;
+                    fixture.date = date;
+                    fixture.p1 = p1;
+                    fixture.p2 = p2;
+                    fixture.score1 = score1;
+                    fixture.score2 = score2;
+                    fixture.status = status;
+                }
+            } else {
+                const newFixture = {
+                    id: 'fx_' + Date.now(),
+                    night,
+                    date,
+                    p1,
+                    p2,
+                    score1,
+                    score2,
+                    status
+                };
+                appData.fixtures.push(newFixture);
+            }
+
+            saveData();
+            renderFixtures();
+            closeFixtureModal();
+            showNotification("Fixture saved successfully!", "success");
+        }
+
+        function deleteFixture(id) {
+            if (confirm("Are you sure you want to delete this fixture?")) {
+                appData.fixtures = appData.fixtures.filter(fx => fx.id !== id);
+                saveData();
+                renderFixtures();
+                showNotification("Fixture deleted.", "success");
             }
         }
 
