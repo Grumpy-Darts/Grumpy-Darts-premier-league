@@ -742,7 +742,67 @@ function updateDashboard(){
         document.getElementById("checkoutCard").innerHTML = "--";
     }
 }
+// =====================================
+// TOURNAMENT BRACKET ENGINE
+// =====================================
 
+function createDefaultBracket() {
+    return {
+        qf1: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" },
+        qf2: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" },
+        qf3: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" },
+        qf4: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" },
+        sf1: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" },
+        sf2: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" },
+        final: { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" }
+    };
+}
+
+// Initialize bracket in appData if not present
+if(!window.appData.bracket) {
+    window.appData.bracket = createDefaultBracket();
+}
+
+window.updateBracketMatch = async function(matchKey, field, value) {
+    if(!window.isAdmin) return;
+    if(!window.appData.bracket[matchKey]) {
+        window.appData.bracket[matchKey] = { p1: "TBD", p2: "TBD", score1: "", score2: "", winner: "" };
+    }
+    window.appData.bracket[matchKey][field] = value;
+    
+    // Save to Firebase using your existing fixtures save function
+    await saveFixtures(); 
+    renderFixtures();
+}
+function renderBracketCard(matchKey, title) {
+    const match = (window.appData.bracket && window.appData.bracket[matchKey]) || { p1: "TBD", p2: "TBD", score1: "", score2: "" };
+    
+    return `
+    <div class="bg-grumpyCard rounded-xl p-3 border border-gray-800 shadow-md">
+        <div class="text-xs text-orange-400 font-bold mb-2">${title}</div>
+        ${window.isAdmin ? `
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <input value="${match.p1 === 'TBD' ? '' : match.p1}" placeholder="Player 1" onchange="updateBracketMatch('${matchKey}', 'p1', this.value)" class="p-1.5 bg-black text-xs text-white rounded border border-gray-700 text-center">
+                <input value="${match.p2 === 'TBD' ? '' : match.p2}" placeholder="Player 2" onchange="updateBracketMatch('${matchKey}', 'p2', this.value)" class="p-1.5 bg-black text-xs text-white rounded border border-gray-700 text-center">
+            </div>
+            <div class="flex gap-2 justify-center items-center">
+                <input value="${match.score1 ?? ''}" placeholder="Sc1" onchange="updateBracketMatch('${matchKey}', 'score1', this.value)" class="w-12 p-1 bg-black text-xs text-white rounded border border-gray-700 text-center">
+                <span class="text-xs text-gray-500 font-bold">-</span>
+                <input value="${match.score2 ?? ''}" placeholder="Sc2" onchange="updateBracketMatch('${matchKey}', 'score2', this.value)" class="w-12 p-1 bg-black text-xs text-white rounded border border-gray-700 text-center">
+            </div>
+        ` : `
+            <div class="py-2 bg-black/30 rounded-lg text-sm font-bold">
+                <div>${match.p1}</div>
+                <div class="text-xs text-gray-500 my-0.5">VS</div>
+                <div>${match.p2}</div>
+            </div>
+            <div class="mt-2 text-yellow-400 font-black text-base">
+                ${match.score1 !== "" && match.score2 !== "" ? `${match.score1} - ${match.score2}` : 'Awaiting'}
+            </div>
+        `}
+    </div>
+    `;
+}
 // =====================================
 // FIXTURES ENGINE
 // =====================================
@@ -896,7 +956,39 @@ function renderFixtures(){
         </div>
         `;
     }
+let bracketHtml = `
+    <div class="mt-10 border-t border-orange-500/40 pt-8">
+        <h3 class="text-2xl font-black text-orange-400 mb-6 text-center uppercase tracking-wider">🏆 8-Man Finals Bracket</h3>
+        <div class="grid md:grid-cols-3 gap-6 text-center">
+            
+            <!-- Quarter Finals -->
+            <div class="space-y-4">
+                <h4 class="font-bold text-gray-400 uppercase text-sm">Quarter Finals</h4>
+                ${renderBracketCard('qf1', 'QF 1')}
+                ${renderBracketCard('qf2', 'QF 2')}
+                ${renderBracketCard('qf3', 'QF 3')}
+                ${renderBracketCard('qf4', 'QF 4')}
+            </div>
 
+            <!-- Semi Finals -->
+            <div class="space-y-6 flex flex-col justify-around">
+                <h4 class="font-bold text-gray-400 uppercase text-sm">Semi Finals</h4>
+                ${renderBracketCard('sf1', 'Semi Final 1')}
+                ${renderBracketCard('sf2', 'Semi Final 2')}
+            </div>
+
+            <!-- Final -->
+            <div class="space-y-4 flex flex-col justify-center">
+                <h4 class="font-bold text-yellow-400 uppercase text-sm">Grand Final 🥇</h4>
+                ${renderBracketCard('final', 'The Final')}
+            </div>
+
+        </div>
+    </div>
+    `;
+
+    html += bracketHtml;
+    
     container.innerHTML = html;
 }
 
