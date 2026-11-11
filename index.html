@@ -191,7 +191,7 @@
                 <span class="bg-grumpyYellow/20 text-grumpyYellow px-3 py-1 rounded-lg font-extrabold text-sm uppercase tracking-wider border border-grumpyYellow/30">
                     Official Player Roster & Bios
                 </span>
-                <button id="add-profile-btn" onclick="openProfileModal()" class="hidden px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
+                <button id="add-profile-btn" onclick="openProfileModal()" class="px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
                     <i class="fa-solid fa-user-plus mr-1.5"></i> Add Player Profile
                 </button>
             </div>
@@ -367,7 +367,6 @@
                     document.getElementById('admin-btn-text').innerText = "Admin Logout";
                     document.getElementById('admin-controls-panel').classList.remove('hidden');
                     document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
-                    document.getElementById('add-profile-btn').classList.remove('hidden');
                     renderStandings();
                     renderStats();
                     renderProfiles();
@@ -381,7 +380,6 @@
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
-                document.getElementById('add-profile-btn').classList.add('hidden');
                 renderStandings();
                 renderStats();
                 renderProfiles();
@@ -428,7 +426,7 @@
             if (!appData.profiles || appData.profiles.length === 0) {
                 grid.innerHTML = `
                     <div class="col-span-full text-center py-12 text-gray-500 font-medium">
-                        No player profiles found. Log in as Admin to add players!
+                        No player profiles found. Click "+ Add Player Profile" to add players!
                     </div>
                 `;
                 return;
@@ -551,45 +549,14 @@
             }
         }
 
-        function switchTab(tab) {
-            document.getElementById('league-view').classList.add('hidden');
-            document.getElementById('stats-view').classList.add('hidden');
-            document.getElementById('btn-league1').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
-            document.getElementById('btn-league2').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
-            document.getElementById('btn-stats').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
-
-            if(tab === 'league1') {
-                currentLeague = 'league1';
-                document.getElementById('league-view').classList.remove('hidden');
-                document.getElementById('btn-league1').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
-                document.getElementById('league-title-badge').innerText = "League 1 Standings";
-                renderStandings();
-            } else if(tab === 'league2') {
-                currentLeague = 'league2';
-                document.getElementById('league-view').classList.remove('hidden');
-                document.getElementById('btn-league2').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
-                document.getElementById('league-title-badge').innerText = "League 2 Standings";
-                renderStandings();
-            } else if(tab === 'stats') {
-                document.getElementById('stats-view').classList.remove('hidden');
-                document.getElementById('btn-stats').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
-                renderStats();
-            }
-        }
-
-        function switchStatsLeague(leagueKey) {
-            currentStatsLeague = leagueKey;
-            document.getElementById('btn-stats-l1').className = leagueKey === 'league1' ? "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyRed text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyCard text-gray-400 border border-gray-800";
-            document.getElementById('btn-stats-l2').className = leagueKey === 'league2' ? "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyRed text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyCard text-gray-400 border border-gray-800";
-            renderStats();
-        }
-
         function calculateTotal(player) {
             return player.nights.reduce((a, b) => a + b, 0);
         }
 
         function renderStandings() {
             const league = appData[currentLeague];
+            if (!league) return;
+            
             league.players.sort((a, b) => {
                 const totalA = calculateTotal(a);
                 const totalB = calculateTotal(b);
@@ -598,6 +565,7 @@
             });
 
             const tbody = document.getElementById('standings-tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             league.players.forEach((player, index) => {
@@ -648,7 +616,9 @@
 
         function renderStats() {
             const league = appData[currentStatsLeague];
+            if (!league) return;
             const tbody = document.getElementById('stats-tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             league.players.forEach((player, index) => {
@@ -672,6 +642,13 @@
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function switchStatsLeague(leagueKey) {
+            currentStatsLeague = leagueKey;
+            document.getElementById('btn-stats-l1').className = leagueKey === 'league1' ? "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyRed text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyCard text-gray-400 border border-gray-800";
+            document.getElementById('btn-stats-l2').className = leagueKey === 'league2' ? "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyRed text-white" : "px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition bg-grumpyCard text-gray-400 border border-gray-800";
+            renderStats();
         }
 
         function updateScore(leagueKey, playerIdx, nightIdx, val) {
@@ -715,10 +692,12 @@
         }
 
         function resetCurrentLeague() {
-            appData[currentLeague] = JSON.parse(JSON.stringify(defaultData[currentLeague]));
-            saveData();
-            renderStandings();
-            showNotification("Table reset to defaults successfully!", "success");
+            if(confirm("Are you sure you want to reset this league's table to default?")) {
+                appData[currentLeague] = JSON.parse(JSON.stringify(defaultData[currentLeague]));
+                saveData();
+                renderStandings();
+                showNotification("Table reset successfully!", "success");
+            }
         }
 
         function exportData() {
@@ -753,6 +732,7 @@
             }
         }
 
+        // Initial setup
         renderStandings();
     </script>
 </body>
