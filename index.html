@@ -57,8 +57,8 @@
             
             <!-- Admin Toggle Button -->
             <div class="absolute top-4 right-4">
-                <button onclick="toggleAdminMode()" id="admin-toggle-btn" class="px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange">
-                    <i class="fa-solid fa-lock-open mr-1"></i> <span id="admin-btn-text">Admin Unlocked</span>
+                <button onclick="toggleAdminMode()" id="admin-toggle-btn" class="px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800">
+                    <i class="fa-solid fa-lock mr-1"></i> <span id="admin-btn-text">Admin Login</span>
                 </button>
             </div>
 
@@ -97,9 +97,9 @@
         <div id="notification-box" class="hidden p-4 rounded-xl text-center font-bold text-sm transition-all border"></div>
 
         <!-- Admin Controls Panel (Hidden by default) -->
-        <div id="admin-controls-panel" class="flex flex-col md:flex-row justify-between items-center gap-4 bg-grumpyRed/10 p-4 rounded-xl border border-grumpyRed/30">
+        <div id="admin-controls-panel" class="hidden flex flex-col md:flex-row justify-between items-center gap-4 bg-grumpyRed/10 p-4 rounded-xl border border-grumpyRed/30">
             <div class="flex items-center gap-2 text-grumpyOrange text-xs font-bold">
-                <i class="fa-solid fa-triangle-exclamation"></i> ADMIN MODE ACTIVE: You can edit player names, scores, stats, and fixtures directly.
+                <i class="fa-solid fa-triangle-exclamation"></i> ADMIN MODE ACTIVE: You can edit player names, scores, and stats directly in the tables below.
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <button onclick="resetCurrentLeague()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold rounded-lg transition border border-gray-700">
@@ -157,10 +157,10 @@
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-grumpyPanel p-4 rounded-xl border border-gray-800">
                 <div class="flex items-center gap-3">
                     <span class="bg-grumpyOrange/20 text-grumpyOrange px-3 py-1 rounded-lg font-extrabold text-sm uppercase tracking-wider border border-grumpyOrange/30">
-                        Season Fixtures (Round 1 Focus)
+                        Season Fixtures  (Round 1 Focus)
                     </span>
                 </div>
-                <button id="add-fixture-btn" onclick="openFixtureModal()" class="px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
+                <button id="add-fixture-btn" onclick="openFixtureModal()" class="hidden px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
                     <i class="fa-solid fa-calendar-plus mr-1.5"></i> Add Match Fixture
                 </button>
             </div>
@@ -237,6 +237,7 @@
             
             <form id="profile-form" onsubmit="saveProfileForm(event)" class="space-y-4">
                 <input type="hidden" id="edit-profile-id">
+                <input type="hidden" id="prof-avatar-base64">
                 
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Player Name</label>
@@ -255,8 +256,20 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Player Logo / Avatar (PNG)</label>
+                    <div class="flex items-center gap-3">
+                        <div id="avatar-preview-box" class="w-14 h-14 bg-black/60 border border-gray-800 rounded-xl flex items-center justify-center overflow-hidden text-grumpyOrange text-xl font-black">
+                            <i class="fa-solid fa-user-ninja"></i>
+                        </div>
+                        <div class="flex-1">
+                            <input type="file" id="prof-avatar-file" accept=".png,.jpg,.jpeg" onchange="handleAvatarUpload(event)" class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:uppercase file:bg-grumpyOrange/20 file:text-grumpyOrange hover:file:bg-grumpyOrange/30 file:cursor-pointer transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
                     <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Player Bio & Notes</label>
-                    <textarea id="prof-bio" rows="4" required placeholder="Write custom bio, playing style, favorite checkout doubles..." class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:border-grumpyOrange outline-none transition resize-none"></textarea>
+                    <textarea id="prof-bio" rows="3" required placeholder="Write custom bio, playing style, favorite checkout doubles..." class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:border-grumpyOrange outline-none transition resize-none"></textarea>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-2">
@@ -347,6 +360,7 @@
                 name: "AP Darts",
                 currentAvg: 79.2,
                 pl180s: 14,
+                avatar: "",
                 bio: "The seasoned OG of the Grumpy Darts Premier League, slinging arrows and surviving every format change since Season 1. Scientifically classified as Dartbot Level 12: relentless, unblinking, and powered entirely by instant coffee and sheer stubbornness. When AP steps up to the oche, you aren't just playing a match—you're playing a boss battle."
             },
             {
@@ -354,6 +368,7 @@
                 name: "Justice",
                 currentAvg: 80.5,
                 pl180s: 12,
+                avatar: "",
                 bio: "The back-to-back, reigning heavyweight champion of Seasons 1 and 2. Don't let the moniker fool you—his name has absolutely nothing to do with the law, courts, or righteous verdicts; it's literally just a name he woke up with. While he doesn't dispense legal advice, he does dispense brutal 140s and ruthless closing doubles that leave opponents crying for a mistrial."
             },
             {
@@ -361,6 +376,7 @@
                 name: "Monty",
                 currentAvg: 82.1,
                 pl180s: 9,
+                avatar: "",
                 bio: "Precision double hitter. Always calm under pressure and a heavy favorite in night finals."
             },
             {
@@ -368,6 +384,7 @@
                 name: "Callum",
                 currentAvg: 86.4,
                 pl180s: 18,
+                avatar: "",
                 bio: "High-scoring power house with the highest maximum count this season. Bullseye specialist."
             },
             {
@@ -375,6 +392,7 @@
                 name: "Paul the powerhouse",
                 currentAvg: 83.2,
                 pl180s: 11,
+                avatar: "",
                 bio: "League 2 powerhouse climbing rapidly. Master of clutch 100+ checkouts when it matters most."
             }
         ];
@@ -475,7 +493,7 @@
 
         let currentLeague = 'league1';
         let currentStatsLeague = 'league1';
-        let isAdmin = true; // Default to true so tools are immediately available
+        let isAdmin = false;
         let appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
         if (!appData.profiles) {
             appData.profiles = JSON.parse(JSON.stringify(defaultProfiles));
@@ -501,26 +519,36 @@
         }
 
         function toggleAdminMode() {
-            isAdmin = !isAdmin;
-            if (isAdmin) {
-                document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
-                document.getElementById('admin-btn-text').innerText = "Admin Unlocked";
-                document.getElementById('admin-controls-panel').classList.remove('hidden');
-                document.getElementById('add-fixture-btn').classList.remove('hidden');
-                document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
-                showNotification("Admin mode unlocked!", "success");
+            if (!isAdmin) {
+                const pin = prompt("Enter Admin PIN (Default: grumpy4):");
+                if (pin === "grumpy4") {
+                    isAdmin = true;
+                    document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
+                    document.getElementById('admin-btn-text').innerText = "Admin Logout";
+                    document.getElementById('admin-controls-panel').classList.remove('hidden');
+                    document.getElementById('add-fixture-btn').classList.remove('hidden');
+                    document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
+                    renderStandings();
+                    renderStats();
+                    renderProfiles();
+                    renderFixtures();
+                    showNotification("Admin mode unlocked!", "success");
+                } else if (pin !== null) {
+                    showNotification("Incorrect PIN.", "error");
+                }
             } else {
+                isAdmin = false;
                 document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
                 document.getElementById('add-fixture-btn').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
+                renderStandings();
+                renderStats();
+                renderProfiles();
+                renderFixtures();
                 showNotification("Admin mode locked.", "success");
             }
-            renderStandings();
-            renderStats();
-            renderProfiles();
-            renderFixtures();
         }
 
         function switchTab(tab) {
@@ -743,12 +771,20 @@
                     </div>
                 ` : '';
 
+                let avatarHtml = p.avatar ? `
+                    <div class="w-12 h-12 rounded-xl overflow-hidden border border-grumpyOrange/40 fire-border">
+                        <img src="${p.avatar}" alt="${p.name}" class="w-full h-full object-cover">
+                    </div>
+                ` : `
+                    <div class="w-12 h-12 bg-gradient-to-br from-grumpyOrange to-grumpyRed rounded-xl flex items-center justify-center text-xl font-black text-black fire-glow">
+                        ${p.name.charAt(0).toUpperCase()}
+                    </div>
+                `;
+
                 card.innerHTML = `
                     ${adminActions}
                     <div class="flex items-center gap-3 border-b border-gray-800 pb-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-grumpyOrange to-grumpyRed rounded-xl flex items-center justify-center text-xl font-black text-black fire-glow">
-                            ${p.name.charAt(0).toUpperCase()}
-                        </div>
+                        ${avatarHtml}
                         <div>
                             <h4 class="font-extrabold text-lg text-white group-hover:text-grumpyOrange transition">${p.name}</h4>
                             <span class="text-xs text-grumpyOrange font-bold uppercase tracking-widest"><i class="fa-solid fa-dart-board mr-1"></i> Premier League Player</span>
@@ -779,9 +815,24 @@
             });
         }
 
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64String = e.target.result;
+                    document.getElementById('prof-avatar-base64').value = base64String;
+                    document.getElementById('avatar-preview-box').innerHTML = `<img src="${base64String}" class="w-full h-full object-cover">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         function openProfileModal(id = null) {
             document.getElementById('profile-form').reset();
             document.getElementById('edit-profile-id').value = id || '';
+            document.getElementById('prof-avatar-base64').value = '';
+            document.getElementById('avatar-preview-box').innerHTML = `<i class="fa-solid fa-user-ninja"></i>`;
             
             if (id) {
                 const profile = appData.profiles.find(p => p.id === id);
@@ -791,6 +842,10 @@
                     document.getElementById('prof-avg').value = profile.currentAvg;
                     document.getElementById('prof-180s').value = profile.pl180s;
                     document.getElementById('prof-bio').value = profile.bio;
+                    if (profile.avatar) {
+                        document.getElementById('prof-avatar-base64').value = profile.avatar;
+                        document.getElementById('avatar-preview-box').innerHTML = `<img src="${profile.avatar}" class="w-full h-full object-cover">`;
+                    }
                 }
             } else {
                 document.getElementById('modal-title').innerText = "Add Player Profile";
@@ -810,6 +865,7 @@
             const currentAvg = parseFloat(document.getElementById('prof-avg').value) || 0.0;
             const pl180s = parseInt(document.getElementById('prof-180s').value) || 0;
             const bio = document.getElementById('prof-bio').value.trim();
+            const avatar = document.getElementById('prof-avatar-base64').value;
 
             if (id) {
                 const profile = appData.profiles.find(p => p.id === id);
@@ -818,6 +874,7 @@
                     profile.currentAvg = currentAvg;
                     profile.pl180s = pl180s;
                     profile.bio = bio;
+                    if (avatar) profile.avatar = avatar;
                 }
             } else {
                 const newProfile = {
@@ -825,6 +882,7 @@
                     name,
                     currentAvg,
                     pl180s,
+                    avatar,
                     bio
                 };
                 appData.profiles.push(newProfile);
@@ -1030,8 +1088,6 @@
 
         // Initial setup
         renderStandings();
-        renderFixtures();
-        renderProfiles();
     </script>
 </body>
 </html>
