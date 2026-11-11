@@ -414,6 +414,37 @@
         </div>
     </div>
 
+    <!-- Admin PIN Login Modal -->
+    <div id="admin-pin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-grumpyPanel rounded-2xl fire-border max-w-sm w-full p-6 space-y-5 shadow-2xl relative text-center">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 class="text-lg font-black text-grumpyYellow uppercase tracking-wider">
+                    <i class="fa-solid fa-lock mr-2"></i> Admin Authentication
+                </h3>
+                <button onclick="closePinModal()" class="text-gray-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="verifyAdminPin(event)" class="space-y-4 pt-2">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-2">Enter Admin PIN Code</label>
+                    <input type="password" id="admin-pin-input" required autofocus placeholder="••••" class="w-full text-center tracking-widest text-2xl bg-black/60 border border-gray-800 rounded-xl px-3 py-3 text-white font-black focus:border-grumpyOrange outline-none transition">
+                    <p class="text-[10px] text-gray-500 mt-1">Default PIN is <span class="text-grumpyOrange font-bold">1234</span></p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closePinModal()" class="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs uppercase rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-black text-xs uppercase rounded-xl fire-glow shadow-lg transition">
+                        Unlock Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Firebase SDK Imports & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -529,7 +560,7 @@
     <script>
         let currentLeague = 'league1';
         let currentStatsLeague = 'league1';
-        let isAdmin = true;
+        let isAdmin = false;
 
         function showNotification(msg, type = 'success') {
             const notif = document.getElementById('notification-box');
@@ -545,33 +576,57 @@
         }
 
         function toggleAdminMode() {
-            isAdmin = !isAdmin;
             if (isAdmin) {
-                document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
-                document.getElementById('admin-btn-text').innerText = "Admin Logout";
-                document.getElementById('admin-controls-panel').classList.remove('hidden');
-                document.getElementById('add-fixture-btn').classList.remove('hidden');
-                document.getElementById('add-hof-btn').classList.remove('hidden');
-                document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
-            } else {
+                isAdmin = false;
                 document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
                 document.getElementById('add-fixture-btn').classList.add('hidden');
                 document.getElementById('add-hof-btn').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
+                refreshAllViews();
+                showNotification("Logged out of Admin mode.", "success");
+            } else {
+                document.getElementById('admin-pin-input').value = '';
+                document.getElementById('admin-pin-modal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('admin-pin-input').focus(), 100);
             }
-            refreshAllViews();
         }
 
-        // Initialize with Admin Mode unlocked by default as requested previously
+        function closePinModal() {
+            document.getElementById('admin-pin-modal').classList.add('hidden');
+        }
+
+        function verifyAdminPin(e) {
+            e.preventDefault();
+            const enteredPin = document.getElementById('admin-pin-input').value.trim();
+            if (enteredPin === '1234') {
+                isAdmin = true;
+                closePinModal();
+                document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
+                document.getElementById('admin-btn-text').innerText = "Admin Logout";
+                document.getElementById('admin-controls-panel').classList.remove('hidden');
+                document.getElementById('add-fixture-btn').classList.remove('hidden');
+                document.getElementById('add-hof-btn').classList.remove('hidden');
+                document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
+                refreshAllViews();
+                showNotification("Admin mode unlocked successfully!", "success");
+            } else {
+                showNotification("Incorrect Admin PIN! Try '1234'", "error");
+                document.getElementById('admin-pin-input').value = '';
+                document.getElementById('admin-pin-input').focus();
+            }
+        }
+
+        // Initialize in View-Only mode by default with secure PIN required
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
-            document.getElementById('admin-btn-text').innerText = "Admin Logout";
-            document.getElementById('admin-controls-panel').classList.remove('hidden');
-            document.getElementById('add-fixture-btn').classList.remove('hidden');
-            document.getElementById('add-hof-btn').classList.remove('hidden');
-            document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
+            isAdmin = false;
+            document.getElementById('admin-toggle-btn').className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
+            document.getElementById('admin-btn-text').innerText = "Admin Login";
+            document.getElementById('admin-controls-panel').classList.add('hidden');
+            document.getElementById('add-fixture-btn').classList.add('hidden');
+            document.getElementById('add-hof-btn').classList.add('hidden');
+            document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
             refreshAllViews();
         });
 
