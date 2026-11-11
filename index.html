@@ -1123,11 +1123,16 @@
             if (!league) return;
             if (!league.players) league.players = [];
             
-            league.players.sort((a, b) => {
-                const totalA = calculateTotal(a);
-                const totalB = calculateTotal(b);
-                if (totalB !== totalA) return totalB - totalA;
-                return (b.legsWon || 0) - (a.legsWon || 0);
+            const sortedPlayers = [...league.players].sort((a,b)=>{
+    const totalA = calculateTotal(a);
+    const totalB = calculateTotal(b);
+
+    if(totalB !== totalA){
+        return totalB - totalA;
+    }
+
+    return (b.legsWon || 0) - (a.legsWon || 0);
+});
             });
 
             const tbody = document.getElementById('standings-tbody');
