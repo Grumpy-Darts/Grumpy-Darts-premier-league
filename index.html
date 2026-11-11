@@ -651,12 +651,23 @@ function renderLeague(leagueKey){
 
     players.forEach((player, index)=>{
         const nights = player.nights || [0, 0, 0, 0, 0];
+        
+        // Check if player is in the Top 4 (indices 0, 1, 2, 3) vs Bottom 4
+        const isTopFour = index < 4;
+        const rowHighlight = isTopFour 
+            ? "bg-orange-950/20 border-b-2 border-orange-500/50" 
+            : "border-b border-gray-800 hover:bg-black/40";
+        
+        // Add a strong divider border specifically after the 4th player row
+        const bottomDivider = index === 3 ? "border-b-4 border-orange-500" : "";
+
         html += `
-        <tr class="border-b border-gray-800 hover:bg-black/40">
-        <td class="p-2 font-black">${index + 1}</td>
+        <tr class="${rowHighlight} ${bottomDivider}">
+        <td class="p-2 font-black ${isTopFour ? 'text-orange-400' : 'text-gray-400'}">${index + 1}</td>
         <td class="p-2 font-bold flex items-center gap-2">
-            ${player.avatar ? `<img src="${player.avatar}" class="w-7 h-7 rounded-full object-cover">` : ''}
+            ${player.avatar ? `<img src="${player.avatar}" class="w-7 h-7 rounded-full object-cover border border-orange-500/50">` : ''}
             ${player.name}
+            ${isTopFour ? '<span class="text-[10px] bg-orange-600/30 text-orange-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Top 4</span>' : ''}
         </td>
         ${nights.map((score, night)=>`
             <td class="p-2">
@@ -693,6 +704,7 @@ function renderLeague(leagueKey){
 
     container.innerHTML = html;
     updateDashboard();
+}
 }
 
 function updateDashboard(){
