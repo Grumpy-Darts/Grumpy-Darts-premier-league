@@ -446,120 +446,160 @@
     </div>
 
     <!-- Firebase SDK Imports & Application Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+        getAuth,
+        signOut,
+        onAuthStateChanged,
+        signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyDo6OFhn4VVfCevXzuKa9DYzYIZUt9ovkQ",
-            authDomain: "grumpydarts-193d4.firebaseapp.com",
-            projectId: "grumpydarts-193d4",
-            storageBucket: "grumpydarts-193d4.firebasestorage.app",
-            messagingSenderId: "524156423369",
-            appId: "1:524156423369:web:8899585aeb80de0c369118",
-            measurementId: "G-XPZCMYHYWM"
-        };
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        apiKey: "AIzaSyDo6OFhn4VVfCevXzuKa9DYzYIZUt9ovkQ",
+        authDomain: "grumpydarts-193d4.firebaseapp.com",
+        projectId: "grumpydarts-193d4",
+        storageBucket: "grumpydarts-193d4.firebasestorage.app",
+        messagingSenderId: "524156423369",
+        appId: "1:524156423369:web:8899585aeb80de0c369118",
+        measurementId: "G-XPZCMYHYWM"
+    };
 
-        let db = null, auth = null, userId = null;
-        let isCloudSynced = false;
+    const ADMIN_UID = "ZowpPthsrHUhJicRwDNn3etUac02";
 
-        const defaultHallOfFame = [
-            {
-                id: "h1",
-                name: "Justice",
-                title: "Season 1 & 2 Back-to-Back Champion",
-                desc: "Dominated the oche across the first two seasons with ruthless closing doubles and unshakeable composure, cementing his legacy as the ultimate Pumpkin King of the league."
-            },
-            {
-                id: "h2",
-                name: "AP Darts",
-                title: "Season 3 Premier Champion",
-                desc: "Dartbot Level 12 activated! Powered through a grueling finals night in Season 3, clinching the trophy with clinical high checkouts and unmatched tactical endurance."
+    let db = null, auth = null, userId = null;
+    let isCloudSynced = false;
+
+    const defaultHallOfFame = [
+        {
+            id: "h1",
+            name: "Justice",
+            title: "Season 1 & 2 Back-to-Back Champion",
+            desc: "Dominated the oche across the first two seasons with ruthless closing doubles and unshakeable composure, cementing his legacy as the ultimate Pumpkin King of the league."
+        },
+        {
+            id: "h2",
+            name: "AP Darts",
+            title: "Season 3 Premier Champion",
+            desc: "Dartbot Level 12 activated! Powered through a grueling finals night in Season 3, clinching the trophy with clinical high checkouts and unmatched tactical endurance."
+        }
+    ];
+
+    const defaultData = {
+        league1: {
+            title: "League 1",
+            players: [],
+            stats: {}
+        },
+        league2: {
+            title: "League 2",
+            players: [],
+            stats: {}
+        },
+        profiles: [],
+        fixtures: [],
+        hallOfFame: defaultHallOfFame
+    };
+
+    window.appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
+    if (!window.appData.profiles) window.appData.profiles = [];
+    if (!window.appData.fixtures) window.appData.fixtures = [];
+    if (!window.appData.hallOfFame || window.appData.hallOfFame.length === 0) window.appData.hallOfFame = defaultHallOfFame;
+
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        function setAdminUI(allowed) {
+            isAdmin = allowed;
+
+            const btn = document.getElementById('admin-toggle-btn');
+            const label = document.getElementById('admin-btn-text');
+            const panel = document.getElementById('admin-controls-panel');
+            const addFixture = document.getElementById('add-fixture-btn');
+            const addHof = document.getElementById('add-hof-btn');
+            const indicator = document.getElementById('view-mode-indicator');
+
+            if (!btn || !label || !panel || !addFixture || !addHof || !indicator) return;
+
+            if (allowed) {
+                btn.className = "px-3 py-1.5 bg-grumpyRed text-white text-xs font-bold rounded-lg transition fire-glow border border-grumpyOrange";
+                label.innerText = "Admin Logout";
+                panel.classList.remove('hidden');
+                addFixture.classList.remove('hidden');
+                addHof.classList.remove('hidden');
+                indicator.innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
+            } else {
+                btn.className = "px-3 py-1.5 bg-grumpyCard hover:bg-grumpyRed/20 text-gray-400 hover:text-white text-xs font-bold rounded-lg transition border border-gray-800";
+                label.innerText = "Admin Login";
+                panel.classList.add('hidden');
+                addFixture.classList.add('hidden');
+                addHof.classList.add('hidden');
+                indicator.innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
             }
-        ];
+        }
 
-        const defaultData = {
-            league1: {
-                title: "League 1",
-                players: [],
-                stats: {}
-            },
-            league2: {
-                title: "League 2",
-                players: [],
-                stats: {}
-            },
-            profiles: [],
-            fixtures: [],
-            hallOfFame: defaultHallOfFame
-        };
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (user.uid !== ADMIN_UID) {
+                    signOut(auth).catch(() => {});
+                    setAdminUI(false);
+                    showNotification("This account is not authorised for admin access.", "error");
+                    return;
+                }
 
-        window.appData = JSON.parse(localStorage.getItem('grumpy_darts_data_s4')) || defaultData;
-        if (!window.appData.profiles) window.appData.profiles = [];
-        if (!window.appData.fixtures) window.appData.fixtures = [];
-        if (!window.appData.hallOfFame || window.appData.hallOfFame.length === 0) window.appData.hallOfFame = defaultHallOfFame;
+                userId = user.uid;
+                isCloudSynced = true;
+                setAdminUI(true);
+                setupCloudSync();
+            } else {
+                userId = null;
+                isCloudSynced = false;
+                setAdminUI(false);
+            }
+        });
+    } catch (e) {
+        // Fallback to local storage mode silently
+    }
+
+    function setupCloudSync() {
+        if (!db || !userId) return;
 
         try {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
+            const docRef = doc(db, 'artifacts', 'grumpy-darts-s4', 'public', 'data');
 
-            async function initAuth() {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const cloudData = docSnap.data();
+                    if (cloudData && cloudData.payload) {
+                        try {
+                            window.appData = JSON.parse(cloudData.payload);
+                            localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(window.appData));
+                            if (typeof window.refreshAllViews === 'function') {
+                                window.refreshAllViews();
+                            }
+                        } catch (parseErr) {}
                     }
-                    userId = auth.currentUser?.uid || 'anon_' + Math.random().toString(36).substring(2);
-                    isCloudSynced = true;
-                    setupCloudSync();
-                } catch (e) {
-                    // Fallback to local storage mode silently
+                } else {
+                    setDoc(docRef, { payload: JSON.stringify(window.appData) }).catch(() => {});
                 }
-            }
-            initAuth();
-        } catch (e) {
-            // Fallback to local storage mode silently
-        }
+            }, () => {});
+        } catch (err) {}
+    }
 
-        function setupCloudSync() {
-            if (!db || !userId) return;
-            try {
+    window.saveDataCloud = async function() {
+        try {
+            localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(window.appData));
+
+            if (isCloudSynced && db && auth && auth.currentUser && auth.currentUser.uid === ADMIN_UID) {
                 const docRef = doc(db, 'artifacts', 'grumpy-darts-s4', 'public', 'data');
-                
-                onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const cloudData = docSnap.data();
-                        if (cloudData && cloudData.payload) {
-                            try {
-                                window.appData = JSON.parse(cloudData.payload);
-                                localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(window.appData));
-                                if (typeof window.refreshAllViews === 'function') {
-                                    window.refreshAllViews();
-                                }
-                            } catch (parseErr) {}
-                        }
-                    } else {
-                        setDoc(docRef, { payload: JSON.stringify(window.appData) }).catch(() => {});
-                    }
-                }, (err) => {
-                    // Suppress snapshot permission/connection warnings in static hosting
-                });
-            } catch (err) {}
-        }
-
-        window.saveDataCloud = async function() {
-            try {
-                localStorage.setItem('grumpy_darts_data_s4', JSON.stringify(window.appData));
-                if (isCloudSynced && db) {
-                    const docRef = doc(db, 'artifacts', 'grumpy-darts-s4', 'public', 'data');
-                    await setDoc(docRef, { payload: JSON.stringify(window.appData) }).catch(() => {});
-                }
-            } catch (e) {}
-        }
-    </script>
+                await setDoc(docRef, { payload: JSON.stringify(window.appData) }).catch(() => {});
+            }
+        } catch (e) {}
+    }
+</script>
 
     <script>
         let currentLeague = 'league1';
