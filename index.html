@@ -71,7 +71,7 @@
                 Grumpy Darts Premier League
             </h1>
             <p class="text-gray-400 text-sm md:text-base font-medium max-w-xl mx-auto">
-                Official standings, match scores, 180s, and player profiles.
+                Official standings, 180s, player profiles and a hall of fame.
             </p>
             
             <div class="flex flex-wrap justify-center gap-3 pt-2">
@@ -83,6 +83,9 @@
                 </button>
                 <button onclick="switchTab('fixtures')" id="btn-fixtures" class="px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800">
                     <i class="fa-solid fa-calendar-days mr-2"></i> Fixtures
+                </button>
+                <button onclick="switchTab('halloffame')" id="btn-halloffame" class="px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800">
+                    <i class="fa-solid fa-crown mr-2"></i> Hall of Fame
                 </button>
                 <button onclick="switchTab('stats')" id="btn-stats" class="px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800">
                     <i class="fa-solid fa-chart-simple mr-2"></i> Performance Stats
@@ -166,6 +169,22 @@
             </div>
 
             <div id="fixtures-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Hall of Fame View -->
+        <div id="halloffame-view" class="space-y-6 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-grumpyPanel p-4 rounded-xl border border-gray-800">
+                <span class="bg-grumpyYellow/20 text-grumpyYellow px-3 py-1 rounded-lg font-extrabold text-sm uppercase tracking-wider border border-grumpyYellow/30">
+                    Hall of Fame & Past Champions
+                </span>
+                <button id="add-hof-btn" onclick="openHofModal()" class="hidden px-4 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:scale-105 transition duration-200 fire-glow">
+                    <i class="fa-solid fa-award mr-1.5"></i> Add Hall of Fame Entry
+                </button>
+            </div>
+
+            <div id="hof-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Populated by JS -->
             </div>
         </div>
@@ -353,6 +372,48 @@
         </div>
     </div>
 
+    <!-- Modal for Adding/Editing Hall of Fame Entries -->
+    <div id="hof-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-grumpyPanel rounded-2xl fire-border max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 id="hof-modal-title" class="text-xl font-black text-grumpyYellow uppercase tracking-wider">
+                    Add Hall of Fame Entry
+                </h3>
+                <button onclick="closeHofModal()" class="text-gray-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="hof-form" onsubmit="saveHofForm(event)" class="space-y-4">
+                <input type="hidden" id="edit-hof-id">
+                
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Player Name</label>
+                    <input type="text" id="hof-name" required placeholder="e.g. Justice" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Title / Milestone (e.g., Season 1 & 2 Champion)</label>
+                    <input type="text" id="hof-title" required placeholder="e.g. Back-to-Back Season 1 & 2 Champion" class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white font-bold focus:border-grumpyOrange outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Trophy / Achievement Details</label>
+                    <textarea id="hof-desc" rows="4" required placeholder="Explain what they won, historic stats, or legendary match night dominance..." class="w-full bg-black/60 border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:border-grumpyOrange outline-none transition resize-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeHofModal()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs uppercase rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-gradient-to-r from-grumpyOrange to-grumpyRed text-black font-black text-xs uppercase rounded-xl fire-glow shadow-lg transition">
+                        Save Entry
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const defaultProfiles = [
             {
@@ -440,6 +501,21 @@
             }
         ];
 
+        const defaultHallOfFame = [
+            {
+                id: "h1",
+                name: "Justice",
+                title: "Season 1 & 2 Back-to-Back Champion",
+                desc: "Dominated the oche across the first two seasons with ruthless closing doubles and unshakeable composure, cementing his legacy as the ultimate Pumpkin King of the league."
+            },
+            {
+                id: "h2",
+                name: "AP Darts",
+                title: "Season 3 Premier Champion",
+                desc: "Dartbot Level 12 activated! Powered through a grueling finals night in Season 3, clinching the trophy with clinical high checkouts and unmatched tactical endurance."
+            }
+        ];
+
         const defaultData = {
             league1: {
                 title: "League 1",
@@ -488,7 +564,8 @@
                 }
             },
             profiles: defaultProfiles,
-            fixtures: defaultFixtures
+            fixtures: defaultFixtures,
+            hallOfFame: defaultHallOfFame
         };
 
         let currentLeague = 'league1';
@@ -500,6 +577,9 @@
         }
         if (!appData.fixtures) {
             appData.fixtures = JSON.parse(JSON.stringify(defaultFixtures));
+        }
+        if (!appData.hallOfFame) {
+            appData.hallOfFame = JSON.parse(JSON.stringify(defaultHallOfFame));
         }
 
         function showNotification(msg, type = 'success') {
@@ -527,11 +607,13 @@
                     document.getElementById('admin-btn-text').innerText = "Admin Logout";
                     document.getElementById('admin-controls-panel').classList.remove('hidden');
                     document.getElementById('add-fixture-btn').classList.remove('hidden');
+                    document.getElementById('add-hof-btn').classList.remove('hidden');
                     document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-lock-open mr-1 text-grumpyRed"></i> Edit Mode Active';
                     renderStandings();
                     renderStats();
                     renderProfiles();
                     renderFixtures();
+                    renderHallOfFame();
                     showNotification("Admin mode unlocked!", "success");
                 } else if (pin !== null) {
                     showNotification("Incorrect PIN.", "error");
@@ -542,11 +624,13 @@
                 document.getElementById('admin-btn-text').innerText = "Admin Login";
                 document.getElementById('admin-controls-panel').classList.add('hidden');
                 document.getElementById('add-fixture-btn').classList.add('hidden');
+                document.getElementById('add-hof-btn').classList.add('hidden');
                 document.getElementById('view-mode-indicator').innerHTML = '<i class="fa-solid fa-eye mr-1 text-grumpyYellow"></i> View-Only Mode';
                 renderStandings();
                 renderStats();
                 renderProfiles();
                 renderFixtures();
+                renderHallOfFame();
                 showNotification("Admin mode locked.", "success");
             }
         }
@@ -554,11 +638,13 @@
         function switchTab(tab) {
             document.getElementById('league-view').classList.add('hidden');
             document.getElementById('fixtures-view').classList.add('hidden');
+            document.getElementById('halloffame-view').classList.add('hidden');
             document.getElementById('stats-view').classList.add('hidden');
             document.getElementById('profiles-view').classList.add('hidden');
             document.getElementById('btn-league1').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-league2').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-fixtures').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
+            document.getElementById('btn-halloffame').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-stats').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
             document.getElementById('btn-profiles').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyCard text-gray-400 hover:text-white border border-gray-800";
 
@@ -578,6 +664,10 @@
                 document.getElementById('fixtures-view').classList.remove('hidden');
                 document.getElementById('btn-fixtures').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
                 renderFixtures();
+            } else if(tab === 'halloffame') {
+                document.getElementById('halloffame-view').classList.remove('hidden');
+                document.getElementById('btn-halloffame').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
+                renderHallOfFame();
             } else if(tab === 'stats') {
                 document.getElementById('stats-view').classList.remove('hidden');
                 document.getElementById('btn-stats').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
@@ -586,6 +676,122 @@
                 document.getElementById('profiles-view').classList.remove('hidden');
                 document.getElementById('btn-profiles').className = "px-6 py-2.5 rounded-xl font-bold uppercase text-sm transition-all bg-grumpyRed text-white fire-glow shadow-lg";
                 renderProfiles();
+            }
+        }
+
+        function renderHallOfFame() {
+            const grid = document.getElementById('hof-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            if (!appData.hallOfFame || appData.hallOfFame.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-500 font-medium">
+                        No Hall of Fame entries found. Click "+ Add Hall of Fame Entry" to add champions!
+                    </div>
+                `;
+                return;
+            }
+
+            appData.hallOfFame.forEach(h => {
+                const card = document.createElement('div');
+                card.className = "bg-grumpyPanel border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl hover:border-grumpyOrange/40 transition duration-300 relative group";
+
+                let adminActions = isAdmin ? `
+                    <div class="absolute top-4 right-4 flex items-center gap-1 bg-black/70 p-1.5 rounded-lg border border-gray-800">
+                        <button onclick="openHofModal('${h.id}')" class="w-7 h-7 text-xs bg-grumpyOrange/20 text-grumpyOrange hover:bg-grumpyOrange hover:text-black rounded font-bold transition flex items-center justify-center">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="deleteHof('${h.id}')" class="w-7 h-7 text-xs bg-grumpyRed/20 text-grumpyRed hover:bg-grumpyRed hover:text-white rounded font-bold transition flex items-center justify-center">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                ` : '';
+
+                card.innerHTML = `
+                    ${adminActions}
+                    <div class="flex items-center gap-3 border-b border-gray-800 pb-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-grumpyYellow to-grumpyOrange rounded-xl flex items-center justify-center text-xl font-black text-black fire-glow shadow-lg">
+                            <i class="fa-solid fa-crown"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-extrabold text-lg text-white group-hover:text-grumpyYellow transition">${h.name}</h4>
+                            <span class="text-xs text-grumpyOrange font-bold uppercase tracking-widest">${h.title}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-grumpyCard/60 p-4 rounded-xl border border-gray-800/80 space-y-2">
+                        <h5 class="text-xs font-bold uppercase text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-award text-grumpyYellow"></i> Trophy & Achievement Details
+                        </h5>
+                        <p class="text-xs text-gray-300 leading-relaxed font-normal">
+                            ${h.desc}
+                        </p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openHofModal(id = null) {
+            document.getElementById('hof-form').reset();
+            document.getElementById('edit-hof-id').value = id || '';
+            
+            if (id) {
+                const entry = appData.hallOfFame.find(item => item.id === id);
+                if (entry) {
+                    document.getElementById('hof-modal-title').innerText = "Edit Hall of Fame Entry";
+                    document.getElementById('hof-name').value = entry.name;
+                    document.getElementById('hof-title').value = entry.title;
+                    document.getElementById('hof-desc').value = entry.desc;
+                }
+            } else {
+                document.getElementById('hof-modal-title').innerText = "Add Hall of Fame Entry";
+            }
+            
+            document.getElementById('hof-modal').classList.remove('hidden');
+        }
+
+        function closeHofModal() {
+            document.getElementById('hof-modal').classList.add('hidden');
+        }
+
+        function saveHofForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-hof-id').value;
+            const name = document.getElementById('hof-name').value.trim();
+            const title = document.getElementById('hof-title').value.trim();
+            const desc = document.getElementById('hof-desc').value.trim();
+
+            if (id) {
+                const entry = appData.hallOfFame.find(item => item.id === id);
+                if (entry) {
+                    entry.name = name;
+                    entry.title = title;
+                    entry.desc = desc;
+                }
+            } else {
+                const newEntry = {
+                    id: 'hof_' + Date.now(),
+                    name,
+                    title,
+                    desc
+                };
+                appData.hallOfFame.push(newEntry);
+            }
+
+            saveData();
+            renderHallOfFame();
+            closeHofModal();
+            showNotification("Hall of Fame entry saved successfully!", "success");
+        }
+
+        function deleteHof(id) {
+            if (confirm("Are you sure you want to delete this Hall of Fame entry?")) {
+                appData.hallOfFame = appData.hallOfFame.filter(item => item.id !== id);
+                saveData();
+                renderHallOfFame();
+                showNotification("Hall of Fame entry deleted.", "success");
             }
         }
 
